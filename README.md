@@ -38,7 +38,7 @@ flowchart LR
 
 验证图片和完整 CSV/JSON 数据位于 [`examples/verified_run`](examples/verified_run)。
 
-## CSK3/int8 已验证结果
+## CSK3/int8 固定阈值结果
 
 硬件平台：RTX 4060 Laptop GPU + PYNQ-Z2，SD 1.5，100 个基础扩散时间步，随机种子 `3669225787`。
 
@@ -60,16 +60,38 @@ CSK3 将每步传输量从 CSK2 的 32768 B 降至 4096 B，并把 warmup、余�
 
 本次验证的图片和完整 100 步 CSV/JSON 数据位于 [`examples/csk3_int8_run`](examples/csk3_int8_run)。
 
+## 动态阈值结果
+
+动态阈值参数来自 8 组真实 CSK3 固定阈值实验，不是根据单张图片指定。连续跳步相似度中位数分别为：第 1 次 `0.999822`、第 2 次 `0.999499`、第 3 次 `0.999218`。据此采用三个阶段：
+
+- 第 1-15 步：FPGA warmup 强制不跳。
+- 第 16-70 步：严格阈值 `0.99960`。
+- 第 71-100 步：`相邻时间步相似度 EMA - 0.00035`，并限制在 `0.99945-0.99965`。
+
+5 个相同随机种子的固定/动态成对实验结果：
+
+| 指标（5 组中位数） | 固定 0.999 | 动态阈值 |
+| --- | ---: | ---: |
+| PSNR | 25.23 dB | 27.35 dB |
+| SSIM | 0.866 | 0.900 |
+| LPIPS | 0.074 | 0.044 |
+| 加速比 | 2.35x | 1.84x |
+| 跳步数 | 61 | 49 |
+
+5 组动态实验的 PSNR、SSIM 和 LPIPS 均同时改善，且都没有发生第 3 次连续跳步。动态阈值牺牲一部分速度，换取更稳定的生成轨迹。完整定参和逐种子结果见 [`DYNAMIC_THRESHOLD_EVALUATION.md`](DYNAMIC_THRESHOLD_EVALUATION.md)，代表性实验位于 [`examples/dynamic_threshold_run`](examples/dynamic_threshold_run)。
+
 ## 目录
 
 ```text
 combined_speed_test.py       一键 baseline + PYNQ 动态生成与评估
 config.py                    模型、提示词、随机种子和跳步参数
+dynamic_threshold.py         三阶段动态阈值和在线 EMA 控制器
 pynq_cosine_client.py        PC 端 CSK3 二进制协议客户端
 quality_metrics.py           PSNR、SSIM、LPIPS、CLIP Score
 run_pynq_speedup.cmd         Windows 一键运行入口
 deploy_pynq_server.cmd       部署 bit/hwh 和板端服务
 test_pynq_protocol.py        本地协议测试
+test_dynamic_threshold.py    动态阈值阶段、EMA 和边界测试
 test_pynq_hardware.py        真实 PYNQ/FPGA 测试
 pynq_cosine_overlay/
   hls/src/                   HLS C++ IP 源码和测试台
@@ -125,14 +147,23 @@ experiments/YYYYMMDD_HHMMSS_seed_<seed>/
   quality_metrics.json
 ```
 
-`step_metrics.csv` 每个扩散时间步一行，包含余弦相似度、跳步结果、量化时间、网络往返时间、FPGA kernel 时间、UNet 时间和 Scheduler 时间。第一步还没有参考向量，因此 similarity 为 `NaN`。
+`step_metrics.csv` 每个扩散时间步一行，包含余弦相似度、请求阈值、Q1.15 编码、FPGA 实际有效阈值、阈值阶段、在线 EMA、跳步结果、量化时间、网络往返时间、FPGA kernel 时间、UNet 时间和 Scheduler 时间。第一步还没有参考向量，因此 similarity 为 `NaN`。
+
+需要复现实验种子或临时回到固定阈值时，可以在当前 CMD 中设置：
+
+```bat
+set SD_SEED=3669225787
+set SD_DYNAMIC_THRESHOLD=0
+```
+
+默认 `SD_DYNAMIC_THRESHOLD=1`。动态阈值由 PC 每步计算后发送给 FPGA，现有 CSK3 bit/hwh 不需要重新生成。
 
 ## 测试
 
 本地协议测试：
 
 ```bat
-python -m unittest -v test_pynq_protocol.py
+python -m unittest -v test_dynamic_threshold.py test_pynq_protocol.py
 ```
 
 真实 FPGA 测试：
@@ -154,4 +185,4 @@ D:\path\to\Vivado\2022.2\bin\vivado.bat -mode batch -source pynq_cosine_overlay\
 
 ## 限制
 
-PYNQ-Z2 只负责压缩特征的统计和完整跳步控制。完整 CLIP、UNet 和 VAE 的参数量及带宽需求远超 Zynq-7020 的资源，因此仍由 PC GPU 执行。当前结果是一组验证实验，正式性能结论应继续使用多提示词、多随机种子统计。
+PYNQ-Z2 只负责压缩特征的统计和完整跳步控制。完整 CLIP、UNet 和 VAE 的参数量及带宽需求远超 Zynq-7020 的资源，因此仍由 PC GPU 执行。当前动态阈值结果覆盖同一提示词的 5 个成对随机种子；正式性能结论仍应继续增加不同提示词和场景。

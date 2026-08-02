@@ -32,6 +32,8 @@ class PynqDecision:
     round_trip_ms: float
     similarity: float
     skip_streak: int
+    threshold_q15: int = 0
+    effective_threshold: float = 0.0
     prepare_ms: float = 0.0
     feature_bytes: int = 0
 
@@ -76,6 +78,15 @@ def compress_feature(
 def quantize_feature(feature) -> np.ndarray:
     """Backward-compatible alias for the CSK3 compression path."""
     return compress_feature(feature)
+
+
+def encode_threshold(threshold: float) -> tuple[int, float]:
+    """Convert a floating threshold to the FPGA Q1.15 representation."""
+    threshold = float(threshold)
+    if not np.isfinite(threshold):
+        raise ValueError("Cosine threshold must be finite")
+    encoded = min(32767, max(0, int(threshold * 32768.0)))
+    return encoded, encoded / 32768.0
 
 
 class PynqCosineClient:
@@ -132,11 +143,12 @@ class PynqCosineClient:
         prepare_started = time.perf_counter()
         quantized = compress_feature(feature)
         prepare_ms = (time.perf_counter() - prepare_started) * 1000.0
+        threshold_q15, effective_threshold = encode_threshold(threshold)
         response = self._request(
             CMD_STEP,
             step_index=int(step_index),
             length=int(quantized.size),
-            threshold_q15=min(32767, max(0, int(float(threshold) * 32768.0))),
+            threshold_q15=threshold_q15,
             warmup_steps=int(warmup_steps),
             max_consecutive_skips=int(max_consecutive_skips),
             payload=memoryview(quantized).cast("B"),
@@ -153,6 +165,8 @@ class PynqCosineClient:
             round_trip_ms=response.round_trip_ms,
             similarity=response.similarity,
             skip_streak=response.skip_streak,
+            threshold_q15=threshold_q15,
+            effective_threshold=effective_threshold,
             prepare_ms=prepare_ms,
             feature_bytes=quantized.nbytes,
         )

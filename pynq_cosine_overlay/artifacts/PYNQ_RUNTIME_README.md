@@ -66,3 +66,16 @@ In `step_metrics.csv`, `prepare_ms` is PC quantization/copy time,
 polling and result reads. The HLS core latency is smaller. `pynq_total_ms` is
 `prepare_ms + round_trip_ms`. The first similarity is `NaN` because no previous
 feature reference exists yet.
+
+## Dynamic threshold schedule
+
+The PC sends a threshold with every CSK3 step request. By default it uses:
+
+- steps 1-15: FPGA warmup forces UNet;
+- steps 16-70: strict threshold 0.99960;
+- steps 71-100: adjacent-step cosine EMA minus 0.00035, clamped to
+  0.99945-0.99965.
+
+The FPGA still performs the comparison and complete skip control. No bitstream
+change is required. Set `SD_DYNAMIC_THRESHOLD=0` before launching to use the
+legacy fixed threshold, or set `SD_SEED` to reproduce a particular run.

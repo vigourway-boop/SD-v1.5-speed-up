@@ -1,0 +1,16 @@
+{
+  "psnr_dynamic_vs_baseline_db": 34.0664958252145,
+  "ssim_dynamic_vs_baseline": 0.9631929397583008,
+  "lpips_dynamic_vs_baseline": 0.022247234359383583,
+  "clip_score_baseline": 30.53453826904297,
+  "clip_score_dynamic": 30.644119262695312,
+  "clip_score_delta_dynamic_minus_baseline": 0.10958099365234375,
+  "evaluation_seconds": 1.9527977000034298,
+  "metric_direction": {
+    "psnr": "higher is better",
+    "ssim": "higher is better",
+    "lpips": "lower is better",
+    "clip_score": "higher is better"
+  },
+  "clip_model": "openai/clip-vit-base-patch32"
+}

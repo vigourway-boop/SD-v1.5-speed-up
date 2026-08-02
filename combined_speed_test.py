@@ -10,6 +10,7 @@ from pathlib import Path
 import torch
 
 from config import *
+from dynamic_threshold import DynamicThresholdController
 from pynq_cosine_client import FEATURE_DOWNSAMPLE_FACTOR, PynqCosineClient
 
 
@@ -19,6 +20,10 @@ STEP_FIELDS = [
     "timestep",
     "similarity",
     "threshold",
+    "threshold_requested",
+    "threshold_q15",
+    "threshold_phase",
+    "adjacent_similarity_ema",
     "threshold_passed",
     "should_skip",
     "action",
@@ -84,6 +89,19 @@ def run_with_dynamic_steps(filename, pynq_client):
     executed_steps = 0
     skipped_steps = 0
     step_rows = []
+    threshold_controller = DynamicThresholdController(
+        total_steps=BASE_STEPS,
+        warmup_steps=WARMUP_STEPS,
+        enabled=DYNAMIC_THRESHOLD_ENABLED,
+        fixed_threshold=SIMILARITY_THRESHOLD,
+        warmup_threshold=WARMUP_SIMILARITY_THRESHOLD,
+        middle_threshold=MIDDLE_SIMILARITY_THRESHOLD,
+        late_start_ratio=LATE_THRESHOLD_START_RATIO,
+        late_margin=LATE_THRESHOLD_MARGIN,
+        late_min=LATE_THRESHOLD_MIN,
+        late_max=LATE_THRESHOLD_MAX,
+        ema_alpha=THRESHOLD_EMA_ALPHA,
+    )
     for step_index, timestep in enumerate(pipe.scheduler.timesteps):
         step_started = time.perf_counter()
         latent_model_input = torch.cat([latents] * 2)
@@ -91,14 +109,16 @@ def run_with_dynamic_steps(filename, pynq_client):
             latent_model_input, timestep
         )
 
+        threshold_point = threshold_controller.point_for(step_index)
         decision = pynq_client.decide(
             latent_model_input,
             step_index=step_index,
-            threshold=SIMILARITY_THRESHOLD,
+            threshold=threshold_point.value,
             warmup_steps=WARMUP_STEPS,
             max_consecutive_skips=MAX_CONSECUTIVE_SKIPS,
         )
         should_skip = decision.should_skip
+        threshold_controller.observe(decision.similarity, should_skip)
         skip_streak = decision.skip_streak
         action = "SKIP" if should_skip else "UNET"
         similarity_text = (
@@ -107,6 +127,8 @@ def run_with_dynamic_steps(filename, pynq_client):
         print(
             f"[PYNQ] step {step_index + 1:03d}/{BASE_STEPS}: {action} "
             f"similarity={similarity_text} "
+            f"threshold={decision.effective_threshold:.6f} "
+            f"phase={threshold_point.phase} "
             f"kernel={decision.kernel_ms:.3f} ms "
             f"round-trip={decision.round_trip_ms:.3f} ms"
         )
@@ -148,7 +170,11 @@ def run_with_dynamic_steps(filename, pynq_client):
                 "step": step_index + 1,
                 "timestep": int(timestep.item()),
                 "similarity": decision.similarity,
-                "threshold": SIMILARITY_THRESHOLD,
+                "threshold": decision.effective_threshold,
+                "threshold_requested": threshold_point.value,
+                "threshold_q15": decision.threshold_q15,
+                "threshold_phase": threshold_point.phase,
+                "adjacent_similarity_ema": threshold_point.adjacent_similarity_ema,
                 "threshold_passed": int(decision.threshold_passed),
                 "should_skip": int(should_skip),
                 "action": action,
@@ -335,7 +361,25 @@ def main():
             "base_steps": BASE_STEPS,
             "executed_unet_steps": executed_steps,
             "skipped_steps": skipped_steps,
-            "similarity_threshold": SIMILARITY_THRESHOLD,
+            "similarity_threshold": (
+                MIDDLE_SIMILARITY_THRESHOLD
+                if DYNAMIC_THRESHOLD_ENABLED
+                else SIMILARITY_THRESHOLD
+            ),
+            "threshold_mode": (
+                "dynamic" if DYNAMIC_THRESHOLD_ENABLED else "fixed"
+            ),
+            "threshold_schedule": {
+                "warmup_steps": WARMUP_STEPS,
+                "warmup_threshold": WARMUP_SIMILARITY_THRESHOLD,
+                "middle_threshold": MIDDLE_SIMILARITY_THRESHOLD,
+                "late_start_step": round(BASE_STEPS * LATE_THRESHOLD_START_RATIO) + 1,
+                "late_rule": "adjacent_similarity_ema - margin",
+                "late_margin": LATE_THRESHOLD_MARGIN,
+                "late_min": LATE_THRESHOLD_MIN,
+                "late_max": LATE_THRESHOLD_MAX,
+                "ema_alpha": THRESHOLD_EMA_ALPHA,
+            } if DYNAMIC_THRESHOLD_ENABLED else None,
             "warmup_steps": WARMUP_STEPS,
             "max_consecutive_skips": MAX_CONSECUTIVE_SKIPS,
             "baseline_seconds": baseline_elapsed,

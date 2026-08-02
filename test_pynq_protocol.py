@@ -13,6 +13,7 @@ from pynq_cosine_client import (
     RESPONSE,
     PynqCosineClient,
     compress_feature,
+    encode_threshold,
     quantize_feature,
 )
 
@@ -106,6 +107,10 @@ class PynqProtocolTest(unittest.TestCase):
         self.assertGreaterEqual(result.prepare_ms, 0.0)
         self.assertEqual(result.feature_bytes, 4096)
         self.assertEqual(result.skip_streak, 2)
+        self.assertEqual(result.threshold_q15, int(0.999 * 32768))
+        self.assertEqual(
+            result.effective_threshold, result.threshold_q15 / 32768.0
+        )
 
     def test_zero_feature_quantization(self):
         result = quantize_feature(torch.zeros(4, 64, 64))
@@ -116,6 +121,12 @@ class PynqProtocolTest(unittest.TestCase):
     def test_invalid_downsample_shape_is_rejected(self):
         with self.assertRaises(ValueError):
             compress_feature(torch.zeros(4, 63, 64))
+
+    def test_threshold_encoding_is_bounded(self):
+        self.assertEqual(encode_threshold(-1.0), (0, 0.0))
+        self.assertEqual(encode_threshold(1.0), (32767, 32767 / 32768.0))
+        with self.assertRaises(ValueError):
+            encode_threshold(float("nan"))
 
 
 if __name__ == "__main__":

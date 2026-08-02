@@ -24,7 +24,8 @@ NEGATIVE_PROMPT = (
     "second horse"
 )
 GUIDANCE = 7.5
-SEED = None
+_seed_override = os.environ.get("SD_SEED")
+SEED = int(_seed_override) if _seed_override else None
 RUN_SEED = int.from_bytes(os.urandom(4), "big") if SEED is None else SEED
 
 # Diffusion and dynamic-skip settings.
@@ -34,6 +35,18 @@ WARMUP_STEPS = 15
 DPS_ENABLED = True
 SIMILARITY_THRESHOLD = 0.999
 MAX_CONSECUTIVE_SKIPS = 3
+
+# Dynamic threshold schedule derived from eight fixed-threshold CSK3 runs.
+DYNAMIC_THRESHOLD_ENABLED = os.environ.get(
+    "SD_DYNAMIC_THRESHOLD", "1"
+).lower() not in {"0", "false", "no"}
+WARMUP_SIMILARITY_THRESHOLD = 0.99995
+MIDDLE_SIMILARITY_THRESHOLD = 0.99960
+LATE_THRESHOLD_START_RATIO = 0.70
+LATE_THRESHOLD_MARGIN = 0.00035
+LATE_THRESHOLD_MIN = 0.99945
+LATE_THRESHOLD_MAX = 0.99965
+THRESHOLD_EMA_ALPHA = 0.20
 
 # PYNQ-Z2 network service. Environment variables can override these defaults.
 PYNQ_HOST = os.environ.get("PYNQ_HOST", "192.168.2.99")

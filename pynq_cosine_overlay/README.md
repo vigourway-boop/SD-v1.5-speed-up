@@ -25,6 +25,8 @@ dot^2 > threshold^2 * norm_x * norm_y
 
 PC 会去除 classifier-free guidance 中重复的 batch，将 `4 * 64 * 64` 特征做 `2x2` 平均池化，并只发送 `4 * 32 * 32 = 4096` 个 int8 元素，即每步 4096 字节。相比 v1.0-csk2 的 32768 字节减少 8 倍。
 
+PC 可以在每个请求中发送不同的 `threshold_q15`。当前三阶段动态阈值在 PC 端根据时间步和真实相邻步余弦 EMA 计算，FPGA 仍负责阈值比较、warmup、连续跳步限制和参考更新，因此启用动态阈值不需要重新生成 overlay。
+
 ## 构建顺序
 
 1. 使用 Vitis HLS 2022.2 运行 `hls/run_hls.tcl`。
