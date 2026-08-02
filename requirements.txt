@@ -1,0 +1,8 @@
+diffusers==0.35.2
+transformers==4.57.1
+accelerate>=1.0,<2
+numpy==2.1.2
+Pillow==11.3.0
+safetensors==0.6.2
+scikit-image==0.25.2
+lpips==0.1.4

@@ -1,0 +1,36 @@
+# Python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+
+# Local environments and credentials
+.env
+.env.*
+.venv/
+venv/
+*.key
+*.pem
+
+# Editors and local agent state
+.vscode/
+.idea/
+.agents/
+.codex/
+
+# Xilinx generated projects, caches and logs
+.Xil/
+*.jou
+*.log
+*.str
+pynq_cosine_overlay/build/
+pynq_cosine_overlay/hls/cosine_skip_hls/
+pynq_cosine_overlay/hls/cosine_skip_hls_artix_check/
+pynq_cosine_overlay/notebooks/
+
+# Generated Stable Diffusion runs
+experiments/
+combo_step*.png
+
+# Accidental local launcher placeholder
+/python

@@ -1,0 +1,20 @@
+* text=auto
+
+*.py text eol=lf
+*.sh text eol=lf
+*.tcl text eol=lf
+*.cpp text eol=lf
+*.h text eol=lf
+*.md text eol=lf
+*.txt text eol=lf
+*.json text eol=lf
+*.csv text eol=lf
+*.hwh text eol=lf
+*.ipynb text eol=lf
+
+*.cmd text eol=crlf
+*.bat text eol=crlf
+
+*.bit binary
+*.zip binary
+*.png binary

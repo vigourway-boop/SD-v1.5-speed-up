@@ -1,0 +1,35 @@
+Build status
+============
+
+Completed successfully on Vivado/Vitis HLS 2022.2 for PYNQ-Z2 Zynq-7020 part xc7z020clg400-1.
+
+Generated deliverables:
+- artifacts/cosine_overlay.bit
+- artifacts/cosine_overlay.hwh
+- artifacts/cosine_skip_test.ipynb
+- artifacts/cosine_skip_hls_ip_export.zip
+
+Source and scripts:
+- hls/src/cosine_skip.cpp
+- hls/src/cosine_skip.h
+- hls/src/cosine_skip_tb.cpp
+- hls/run_hls.tcl
+- vivado/create_overlay.tcl
+
+Validated:
+- HLS C simulation passed.
+- HLS C synthesis passed.
+- HLS IP export passed.
+- Vivado block design validation passed after connecting processing_system7_0/S_AXI_HP0_ACLK to FCLK_CLK0.
+- Vivado synthesis, implementation, and bitstream generation passed.
+- Final routed timing passed at 100 MHz (WNS +0.244 ns, TNS 0.000 ns).
+- Final HWH output registers: dot 0x40/0x44, norm_x 0x58/0x5C, norm_y 0x70/0x74.
+- CSK2 was deployed to 192.168.2.99 and real FPGA protocol tests passed.
+- Identical-vector similarity was 1.0; a random-vector test was about 0.000646.
+- End-to-end baseline/dynamic generation, 100-row CSV and all four quality metrics passed.
+
+Notes:
+- The IP computes a fixed-point cosine threshold decision and returns dot, norm_x and norm_y.
+- The PYNQ ARM computes the reported cosine value from those FPGA outputs.
+- The PC sends one CFG-reduced latent_model_input of length 4 * 64 * 64 = 16384.
+- PYNQ should load cosine_overlay.bit and cosine_overlay.hwh with the same base filename in the same folder.

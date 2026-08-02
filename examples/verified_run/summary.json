@@ -1,0 +1,22 @@
+{
+  "timestamp": "2026-08-02T17:41:59",
+  "seed": 2366136021,
+  "prompt": "a realistic full-body adult horse standing on a grassland, single horse, one horse only, horse anatomy, four legs, hooves, long mane, natural horse head, photorealistic, detailed body, sharp focus",
+  "negative_prompt": "blurry, low quality, low resolution, deformed, malformed animal, bad anatomy, extra legs, missing legs, extra head, fused body, distorted face, dog, cow, deer, goat, bird, cartoon, multiple animals, foal, second horse",
+  "device": "cuda",
+  "pynq_host": "192.168.2.99",
+  "pynq_port": 9000,
+  "base_steps": 100,
+  "executed_unet_steps": 38,
+  "skipped_steps": 62,
+  "similarity_threshold": 0.999,
+  "warmup_steps": 15,
+  "max_consecutive_skips": 3,
+  "baseline_seconds": 10.87662509999791,
+  "dynamic_seconds": 4.572213699997519,
+  "speedup": 2.37885318002608,
+  "pynq_feature_bytes": 3276800,
+  "average_round_trip_ms": 2.17375299995183,
+  "pynq_quantization_transfer_and_fpga_included_in_dynamic_time": true,
+  "quality_evaluation_included_in_dynamic_time": false
+}
