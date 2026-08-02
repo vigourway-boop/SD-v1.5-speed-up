@@ -1,5 +1,5 @@
 ﻿<?xml version="1.0" encoding="UTF-8" standalone="no" ?>
-<EDKSYSTEM EDWVERSION="1.2" TIMESTAMP="Sun Aug  2 17:21:54 2026" VIVADOVERSION="2022.2">
+<EDKSYSTEM EDWVERSION="1.2" TIMESTAMP="Sun Aug  2 19:49:22 2026" VIVADOVERSION="2022.2">
 
   <SYSTEMINFO ARCH="zynq" DEVICE="7z020" NAME="cosine_overlay" PACKAGE="clg400" SPEEDGRADE="-1"/>
 
@@ -159,7 +159,7 @@
   </EXTERNALINTERFACES>
 
   <MODULES>
-    <MODULE COREREVISION="2114723897" FULLNAME="/cosine_skip_0" HWVERSION="1.0" INSTANCE="cosine_skip_0" IPTYPE="PERIPHERAL" IS_ENABLE="1" MODCLASS="PERIPHERAL" MODTYPE="cosine_skip" VLNV="xilinx.com:hls:cosine_skip:1.0">
+    <MODULE COREREVISION="2114724044" FULLNAME="/cosine_skip_0" HWVERSION="1.0" INSTANCE="cosine_skip_0" IPTYPE="PERIPHERAL" IS_ENABLE="1" MODCLASS="PERIPHERAL" MODTYPE="cosine_skip" VLNV="xilinx.com:hls:cosine_skip:1.0">
       <DOCUMENTS/>
       <ADDRESSBLOCKS>
         <ADDRESSBLOCK ACCESS="read-write" INTERFACE="s_axi_control" NAME="Reg" RANGE="65536" USAGE="register">
@@ -434,49 +434,9 @@
                 </FIELD>
               </FIELDS>
             </REGISTER>
-            <REGISTER NAME="y_1">
-              <PROPERTY NAME="DESCRIPTION" VALUE="Data signal of y"/>
-              <PROPERTY NAME="ADDRESS_OFFSET" VALUE="36"/>
-              <PROPERTY NAME="SIZE" VALUE="32"/>
-              <PROPERTY NAME="ACCESS" VALUE="write-only"/>
-              <PROPERTY NAME="IS_ENABLED" VALUE="true"/>
-              <PROPERTY NAME="RESET_VALUE" VALUE="0"/>
-              <FIELDS>
-                <FIELD NAME="y">
-                  <PROPERTY NAME="DESCRIPTION" VALUE="Bit 31 to 0 of y"/>
-                  <PROPERTY NAME="ADDRESS_OFFSET" VALUE="0"/>
-                  <PROPERTY NAME="ACCESS" VALUE="write-only"/>
-                  <PROPERTY NAME="MODIFIED_READ_VALUES" VALUE=""/>
-                  <PROPERTY NAME="WRITE_CONSTRAINT" VALUE="0"/>
-                  <PROPERTY NAME="READ_ACTION" VALUE=""/>
-                  <PROPERTY NAME="BIT_OFFSET" VALUE="0"/>
-                  <PROPERTY NAME="BIT_WIDTH" VALUE="32"/>
-                </FIELD>
-              </FIELDS>
-            </REGISTER>
-            <REGISTER NAME="y_2">
-              <PROPERTY NAME="DESCRIPTION" VALUE="Data signal of y"/>
-              <PROPERTY NAME="ADDRESS_OFFSET" VALUE="40"/>
-              <PROPERTY NAME="SIZE" VALUE="32"/>
-              <PROPERTY NAME="ACCESS" VALUE="write-only"/>
-              <PROPERTY NAME="IS_ENABLED" VALUE="true"/>
-              <PROPERTY NAME="RESET_VALUE" VALUE="0"/>
-              <FIELDS>
-                <FIELD NAME="y">
-                  <PROPERTY NAME="DESCRIPTION" VALUE="Bit 63 to 32 of y"/>
-                  <PROPERTY NAME="ADDRESS_OFFSET" VALUE="0"/>
-                  <PROPERTY NAME="ACCESS" VALUE="write-only"/>
-                  <PROPERTY NAME="MODIFIED_READ_VALUES" VALUE=""/>
-                  <PROPERTY NAME="WRITE_CONSTRAINT" VALUE="0"/>
-                  <PROPERTY NAME="READ_ACTION" VALUE=""/>
-                  <PROPERTY NAME="BIT_OFFSET" VALUE="0"/>
-                  <PROPERTY NAME="BIT_WIDTH" VALUE="32"/>
-                </FIELD>
-              </FIELDS>
-            </REGISTER>
             <REGISTER NAME="length_r">
               <PROPERTY NAME="DESCRIPTION" VALUE="Data signal of length_r"/>
-              <PROPERTY NAME="ADDRESS_OFFSET" VALUE="48"/>
+              <PROPERTY NAME="ADDRESS_OFFSET" VALUE="36"/>
               <PROPERTY NAME="SIZE" VALUE="32"/>
               <PROPERTY NAME="ACCESS" VALUE="write-only"/>
               <PROPERTY NAME="IS_ENABLED" VALUE="true"/>
@@ -494,9 +454,29 @@
                 </FIELD>
               </FIELDS>
             </REGISTER>
+            <REGISTER NAME="step_index">
+              <PROPERTY NAME="DESCRIPTION" VALUE="Data signal of step_index"/>
+              <PROPERTY NAME="ADDRESS_OFFSET" VALUE="44"/>
+              <PROPERTY NAME="SIZE" VALUE="32"/>
+              <PROPERTY NAME="ACCESS" VALUE="write-only"/>
+              <PROPERTY NAME="IS_ENABLED" VALUE="true"/>
+              <PROPERTY NAME="RESET_VALUE" VALUE="0"/>
+              <FIELDS>
+                <FIELD NAME="step_index">
+                  <PROPERTY NAME="DESCRIPTION" VALUE="Bit 31 to 0 of step_index"/>
+                  <PROPERTY NAME="ADDRESS_OFFSET" VALUE="0"/>
+                  <PROPERTY NAME="ACCESS" VALUE="write-only"/>
+                  <PROPERTY NAME="MODIFIED_READ_VALUES" VALUE=""/>
+                  <PROPERTY NAME="WRITE_CONSTRAINT" VALUE="0"/>
+                  <PROPERTY NAME="READ_ACTION" VALUE=""/>
+                  <PROPERTY NAME="BIT_OFFSET" VALUE="0"/>
+                  <PROPERTY NAME="BIT_WIDTH" VALUE="32"/>
+                </FIELD>
+              </FIELDS>
+            </REGISTER>
             <REGISTER NAME="threshold_q15">
               <PROPERTY NAME="DESCRIPTION" VALUE="Data signal of threshold_q15"/>
-              <PROPERTY NAME="ADDRESS_OFFSET" VALUE="56"/>
+              <PROPERTY NAME="ADDRESS_OFFSET" VALUE="52"/>
               <PROPERTY NAME="SIZE" VALUE="32"/>
               <PROPERTY NAME="ACCESS" VALUE="write-only"/>
               <PROPERTY NAME="IS_ENABLED" VALUE="true"/>
@@ -514,9 +494,69 @@
                 </FIELD>
               </FIELDS>
             </REGISTER>
+            <REGISTER NAME="warmup_steps">
+              <PROPERTY NAME="DESCRIPTION" VALUE="Data signal of warmup_steps"/>
+              <PROPERTY NAME="ADDRESS_OFFSET" VALUE="60"/>
+              <PROPERTY NAME="SIZE" VALUE="32"/>
+              <PROPERTY NAME="ACCESS" VALUE="write-only"/>
+              <PROPERTY NAME="IS_ENABLED" VALUE="true"/>
+              <PROPERTY NAME="RESET_VALUE" VALUE="0"/>
+              <FIELDS>
+                <FIELD NAME="warmup_steps">
+                  <PROPERTY NAME="DESCRIPTION" VALUE="Bit 31 to 0 of warmup_steps"/>
+                  <PROPERTY NAME="ADDRESS_OFFSET" VALUE="0"/>
+                  <PROPERTY NAME="ACCESS" VALUE="write-only"/>
+                  <PROPERTY NAME="MODIFIED_READ_VALUES" VALUE=""/>
+                  <PROPERTY NAME="WRITE_CONSTRAINT" VALUE="0"/>
+                  <PROPERTY NAME="READ_ACTION" VALUE=""/>
+                  <PROPERTY NAME="BIT_OFFSET" VALUE="0"/>
+                  <PROPERTY NAME="BIT_WIDTH" VALUE="32"/>
+                </FIELD>
+              </FIELDS>
+            </REGISTER>
+            <REGISTER NAME="max_consecutive_skips">
+              <PROPERTY NAME="DESCRIPTION" VALUE="Data signal of max_consecutive_skips"/>
+              <PROPERTY NAME="ADDRESS_OFFSET" VALUE="68"/>
+              <PROPERTY NAME="SIZE" VALUE="32"/>
+              <PROPERTY NAME="ACCESS" VALUE="write-only"/>
+              <PROPERTY NAME="IS_ENABLED" VALUE="true"/>
+              <PROPERTY NAME="RESET_VALUE" VALUE="0"/>
+              <FIELDS>
+                <FIELD NAME="max_consecutive_skips">
+                  <PROPERTY NAME="DESCRIPTION" VALUE="Bit 31 to 0 of max_consecutive_skips"/>
+                  <PROPERTY NAME="ADDRESS_OFFSET" VALUE="0"/>
+                  <PROPERTY NAME="ACCESS" VALUE="write-only"/>
+                  <PROPERTY NAME="MODIFIED_READ_VALUES" VALUE=""/>
+                  <PROPERTY NAME="WRITE_CONSTRAINT" VALUE="0"/>
+                  <PROPERTY NAME="READ_ACTION" VALUE=""/>
+                  <PROPERTY NAME="BIT_OFFSET" VALUE="0"/>
+                  <PROPERTY NAME="BIT_WIDTH" VALUE="32"/>
+                </FIELD>
+              </FIELDS>
+            </REGISTER>
+            <REGISTER NAME="reset_state">
+              <PROPERTY NAME="DESCRIPTION" VALUE="Data signal of reset_state"/>
+              <PROPERTY NAME="ADDRESS_OFFSET" VALUE="76"/>
+              <PROPERTY NAME="SIZE" VALUE="32"/>
+              <PROPERTY NAME="ACCESS" VALUE="write-only"/>
+              <PROPERTY NAME="IS_ENABLED" VALUE="true"/>
+              <PROPERTY NAME="RESET_VALUE" VALUE="0"/>
+              <FIELDS>
+                <FIELD NAME="reset_state">
+                  <PROPERTY NAME="DESCRIPTION" VALUE="Bit 31 to 0 of reset_state"/>
+                  <PROPERTY NAME="ADDRESS_OFFSET" VALUE="0"/>
+                  <PROPERTY NAME="ACCESS" VALUE="write-only"/>
+                  <PROPERTY NAME="MODIFIED_READ_VALUES" VALUE=""/>
+                  <PROPERTY NAME="WRITE_CONSTRAINT" VALUE="0"/>
+                  <PROPERTY NAME="READ_ACTION" VALUE=""/>
+                  <PROPERTY NAME="BIT_OFFSET" VALUE="0"/>
+                  <PROPERTY NAME="BIT_WIDTH" VALUE="32"/>
+                </FIELD>
+              </FIELDS>
+            </REGISTER>
             <REGISTER NAME="dot_out_1">
               <PROPERTY NAME="DESCRIPTION" VALUE="Data signal of dot_out"/>
-              <PROPERTY NAME="ADDRESS_OFFSET" VALUE="64"/>
+              <PROPERTY NAME="ADDRESS_OFFSET" VALUE="84"/>
               <PROPERTY NAME="SIZE" VALUE="32"/>
               <PROPERTY NAME="ACCESS" VALUE="read-only"/>
               <PROPERTY NAME="IS_ENABLED" VALUE="true"/>
@@ -536,7 +576,7 @@
             </REGISTER>
             <REGISTER NAME="dot_out_2">
               <PROPERTY NAME="DESCRIPTION" VALUE="Data signal of dot_out"/>
-              <PROPERTY NAME="ADDRESS_OFFSET" VALUE="68"/>
+              <PROPERTY NAME="ADDRESS_OFFSET" VALUE="88"/>
               <PROPERTY NAME="SIZE" VALUE="32"/>
               <PROPERTY NAME="ACCESS" VALUE="read-only"/>
               <PROPERTY NAME="IS_ENABLED" VALUE="true"/>
@@ -556,7 +596,7 @@
             </REGISTER>
             <REGISTER NAME="dot_out_ctrl">
               <PROPERTY NAME="DESCRIPTION" VALUE="Control signal of dot_out"/>
-              <PROPERTY NAME="ADDRESS_OFFSET" VALUE="72"/>
+              <PROPERTY NAME="ADDRESS_OFFSET" VALUE="92"/>
               <PROPERTY NAME="SIZE" VALUE="32"/>
               <PROPERTY NAME="ACCESS" VALUE="read-only"/>
               <PROPERTY NAME="IS_ENABLED" VALUE="true"/>
@@ -586,7 +626,7 @@
             </REGISTER>
             <REGISTER NAME="norm_x_out_1">
               <PROPERTY NAME="DESCRIPTION" VALUE="Data signal of norm_x_out"/>
-              <PROPERTY NAME="ADDRESS_OFFSET" VALUE="88"/>
+              <PROPERTY NAME="ADDRESS_OFFSET" VALUE="108"/>
               <PROPERTY NAME="SIZE" VALUE="32"/>
               <PROPERTY NAME="ACCESS" VALUE="read-only"/>
               <PROPERTY NAME="IS_ENABLED" VALUE="true"/>
@@ -606,7 +646,7 @@
             </REGISTER>
             <REGISTER NAME="norm_x_out_2">
               <PROPERTY NAME="DESCRIPTION" VALUE="Data signal of norm_x_out"/>
-              <PROPERTY NAME="ADDRESS_OFFSET" VALUE="92"/>
+              <PROPERTY NAME="ADDRESS_OFFSET" VALUE="112"/>
               <PROPERTY NAME="SIZE" VALUE="32"/>
               <PROPERTY NAME="ACCESS" VALUE="read-only"/>
               <PROPERTY NAME="IS_ENABLED" VALUE="true"/>
@@ -626,7 +666,7 @@
             </REGISTER>
             <REGISTER NAME="norm_x_out_ctrl">
               <PROPERTY NAME="DESCRIPTION" VALUE="Control signal of norm_x_out"/>
-              <PROPERTY NAME="ADDRESS_OFFSET" VALUE="96"/>
+              <PROPERTY NAME="ADDRESS_OFFSET" VALUE="116"/>
               <PROPERTY NAME="SIZE" VALUE="32"/>
               <PROPERTY NAME="ACCESS" VALUE="read-only"/>
               <PROPERTY NAME="IS_ENABLED" VALUE="true"/>
@@ -656,7 +696,7 @@
             </REGISTER>
             <REGISTER NAME="norm_y_out_1">
               <PROPERTY NAME="DESCRIPTION" VALUE="Data signal of norm_y_out"/>
-              <PROPERTY NAME="ADDRESS_OFFSET" VALUE="112"/>
+              <PROPERTY NAME="ADDRESS_OFFSET" VALUE="132"/>
               <PROPERTY NAME="SIZE" VALUE="32"/>
               <PROPERTY NAME="ACCESS" VALUE="read-only"/>
               <PROPERTY NAME="IS_ENABLED" VALUE="true"/>
@@ -676,7 +716,7 @@
             </REGISTER>
             <REGISTER NAME="norm_y_out_2">
               <PROPERTY NAME="DESCRIPTION" VALUE="Data signal of norm_y_out"/>
-              <PROPERTY NAME="ADDRESS_OFFSET" VALUE="116"/>
+              <PROPERTY NAME="ADDRESS_OFFSET" VALUE="136"/>
               <PROPERTY NAME="SIZE" VALUE="32"/>
               <PROPERTY NAME="ACCESS" VALUE="read-only"/>
               <PROPERTY NAME="IS_ENABLED" VALUE="true"/>
@@ -696,7 +736,7 @@
             </REGISTER>
             <REGISTER NAME="norm_y_out_ctrl">
               <PROPERTY NAME="DESCRIPTION" VALUE="Control signal of norm_y_out"/>
-              <PROPERTY NAME="ADDRESS_OFFSET" VALUE="120"/>
+              <PROPERTY NAME="ADDRESS_OFFSET" VALUE="140"/>
               <PROPERTY NAME="SIZE" VALUE="32"/>
               <PROPERTY NAME="ACCESS" VALUE="read-only"/>
               <PROPERTY NAME="IS_ENABLED" VALUE="true"/>
@@ -724,38 +764,125 @@
                 </FIELD>
               </FIELDS>
             </REGISTER>
+            <REGISTER NAME="threshold_passed_out">
+              <PROPERTY NAME="DESCRIPTION" VALUE="Data signal of threshold_passed_out"/>
+              <PROPERTY NAME="ADDRESS_OFFSET" VALUE="156"/>
+              <PROPERTY NAME="SIZE" VALUE="32"/>
+              <PROPERTY NAME="ACCESS" VALUE="read-only"/>
+              <PROPERTY NAME="IS_ENABLED" VALUE="true"/>
+              <PROPERTY NAME="RESET_VALUE" VALUE="0"/>
+              <FIELDS>
+                <FIELD NAME="threshold_passed_out">
+                  <PROPERTY NAME="DESCRIPTION" VALUE="Bit 31 to 0 of threshold_passed_out"/>
+                  <PROPERTY NAME="ADDRESS_OFFSET" VALUE="0"/>
+                  <PROPERTY NAME="ACCESS" VALUE="read-only"/>
+                  <PROPERTY NAME="MODIFIED_READ_VALUES" VALUE=""/>
+                  <PROPERTY NAME="WRITE_CONSTRAINT" VALUE="0"/>
+                  <PROPERTY NAME="READ_ACTION" VALUE="modify"/>
+                  <PROPERTY NAME="BIT_OFFSET" VALUE="0"/>
+                  <PROPERTY NAME="BIT_WIDTH" VALUE="32"/>
+                </FIELD>
+              </FIELDS>
+            </REGISTER>
+            <REGISTER NAME="threshold_passed_out_ctrl">
+              <PROPERTY NAME="DESCRIPTION" VALUE="Control signal of threshold_passed_out"/>
+              <PROPERTY NAME="ADDRESS_OFFSET" VALUE="160"/>
+              <PROPERTY NAME="SIZE" VALUE="32"/>
+              <PROPERTY NAME="ACCESS" VALUE="read-only"/>
+              <PROPERTY NAME="IS_ENABLED" VALUE="true"/>
+              <PROPERTY NAME="RESET_VALUE" VALUE="0"/>
+              <FIELDS>
+                <FIELD NAME="threshold_passed_out_ap_vld">
+                  <PROPERTY NAME="DESCRIPTION" VALUE="Control signal threshold_passed_out_ap_vld"/>
+                  <PROPERTY NAME="ADDRESS_OFFSET" VALUE="0"/>
+                  <PROPERTY NAME="ACCESS" VALUE="read-only"/>
+                  <PROPERTY NAME="MODIFIED_READ_VALUES" VALUE=""/>
+                  <PROPERTY NAME="WRITE_CONSTRAINT" VALUE="0"/>
+                  <PROPERTY NAME="READ_ACTION" VALUE="modify"/>
+                  <PROPERTY NAME="BIT_OFFSET" VALUE="0"/>
+                  <PROPERTY NAME="BIT_WIDTH" VALUE="1"/>
+                </FIELD>
+                <FIELD NAME="RESERVED">
+                  <PROPERTY NAME="DESCRIPTION" VALUE="Reserved.  0s on read."/>
+                  <PROPERTY NAME="ADDRESS_OFFSET" VALUE="1"/>
+                  <PROPERTY NAME="ACCESS" VALUE="read-only"/>
+                  <PROPERTY NAME="MODIFIED_READ_VALUES" VALUE=""/>
+                  <PROPERTY NAME="WRITE_CONSTRAINT" VALUE="0"/>
+                  <PROPERTY NAME="READ_ACTION" VALUE="modify"/>
+                  <PROPERTY NAME="BIT_OFFSET" VALUE="1"/>
+                  <PROPERTY NAME="BIT_WIDTH" VALUE="31"/>
+                </FIELD>
+              </FIELDS>
+            </REGISTER>
+            <REGISTER NAME="skip_streak_out">
+              <PROPERTY NAME="DESCRIPTION" VALUE="Data signal of skip_streak_out"/>
+              <PROPERTY NAME="ADDRESS_OFFSET" VALUE="172"/>
+              <PROPERTY NAME="SIZE" VALUE="32"/>
+              <PROPERTY NAME="ACCESS" VALUE="read-only"/>
+              <PROPERTY NAME="IS_ENABLED" VALUE="true"/>
+              <PROPERTY NAME="RESET_VALUE" VALUE="0"/>
+              <FIELDS>
+                <FIELD NAME="skip_streak_out">
+                  <PROPERTY NAME="DESCRIPTION" VALUE="Bit 31 to 0 of skip_streak_out"/>
+                  <PROPERTY NAME="ADDRESS_OFFSET" VALUE="0"/>
+                  <PROPERTY NAME="ACCESS" VALUE="read-only"/>
+                  <PROPERTY NAME="MODIFIED_READ_VALUES" VALUE=""/>
+                  <PROPERTY NAME="WRITE_CONSTRAINT" VALUE="0"/>
+                  <PROPERTY NAME="READ_ACTION" VALUE="modify"/>
+                  <PROPERTY NAME="BIT_OFFSET" VALUE="0"/>
+                  <PROPERTY NAME="BIT_WIDTH" VALUE="32"/>
+                </FIELD>
+              </FIELDS>
+            </REGISTER>
+            <REGISTER NAME="skip_streak_out_ctrl">
+              <PROPERTY NAME="DESCRIPTION" VALUE="Control signal of skip_streak_out"/>
+              <PROPERTY NAME="ADDRESS_OFFSET" VALUE="176"/>
+              <PROPERTY NAME="SIZE" VALUE="32"/>
+              <PROPERTY NAME="ACCESS" VALUE="read-only"/>
+              <PROPERTY NAME="IS_ENABLED" VALUE="true"/>
+              <PROPERTY NAME="RESET_VALUE" VALUE="0"/>
+              <FIELDS>
+                <FIELD NAME="skip_streak_out_ap_vld">
+                  <PROPERTY NAME="DESCRIPTION" VALUE="Control signal skip_streak_out_ap_vld"/>
+                  <PROPERTY NAME="ADDRESS_OFFSET" VALUE="0"/>
+                  <PROPERTY NAME="ACCESS" VALUE="read-only"/>
+                  <PROPERTY NAME="MODIFIED_READ_VALUES" VALUE=""/>
+                  <PROPERTY NAME="WRITE_CONSTRAINT" VALUE="0"/>
+                  <PROPERTY NAME="READ_ACTION" VALUE="modify"/>
+                  <PROPERTY NAME="BIT_OFFSET" VALUE="0"/>
+                  <PROPERTY NAME="BIT_WIDTH" VALUE="1"/>
+                </FIELD>
+                <FIELD NAME="RESERVED">
+                  <PROPERTY NAME="DESCRIPTION" VALUE="Reserved.  0s on read."/>
+                  <PROPERTY NAME="ADDRESS_OFFSET" VALUE="1"/>
+                  <PROPERTY NAME="ACCESS" VALUE="read-only"/>
+                  <PROPERTY NAME="MODIFIED_READ_VALUES" VALUE=""/>
+                  <PROPERTY NAME="WRITE_CONSTRAINT" VALUE="0"/>
+                  <PROPERTY NAME="READ_ACTION" VALUE="modify"/>
+                  <PROPERTY NAME="BIT_OFFSET" VALUE="1"/>
+                  <PROPERTY NAME="BIT_WIDTH" VALUE="31"/>
+                </FIELD>
+              </FIELDS>
+            </REGISTER>
           </REGISTERS>
         </ADDRESSBLOCK>
       </ADDRESSBLOCKS>
       <PARAMETERS>
-        <PARAMETER NAME="C_S_AXI_CONTROL_ADDR_WIDTH" VALUE="7"/>
+        <PARAMETER NAME="C_S_AXI_CONTROL_ADDR_WIDTH" VALUE="8"/>
         <PARAMETER NAME="C_S_AXI_CONTROL_DATA_WIDTH" VALUE="32"/>
-        <PARAMETER NAME="C_M_AXI_GMEM0_ID_WIDTH" VALUE="1"/>
-        <PARAMETER NAME="C_M_AXI_GMEM0_ADDR_WIDTH" VALUE="64"/>
-        <PARAMETER NAME="C_M_AXI_GMEM0_DATA_WIDTH" VALUE="32"/>
-        <PARAMETER NAME="C_M_AXI_GMEM0_AWUSER_WIDTH" VALUE="1"/>
-        <PARAMETER NAME="C_M_AXI_GMEM0_ARUSER_WIDTH" VALUE="1"/>
-        <PARAMETER NAME="C_M_AXI_GMEM0_WUSER_WIDTH" VALUE="1"/>
-        <PARAMETER NAME="C_M_AXI_GMEM0_RUSER_WIDTH" VALUE="1"/>
-        <PARAMETER NAME="C_M_AXI_GMEM0_BUSER_WIDTH" VALUE="1"/>
-        <PARAMETER NAME="C_M_AXI_GMEM0_USER_VALUE" VALUE="0x00000000"/>
-        <PARAMETER NAME="C_M_AXI_GMEM0_PROT_VALUE" VALUE="&quot;000&quot;"/>
-        <PARAMETER NAME="C_M_AXI_GMEM0_CACHE_VALUE" VALUE="&quot;0011&quot;"/>
-        <PARAMETER NAME="C_M_AXI_GMEM1_ID_WIDTH" VALUE="1"/>
-        <PARAMETER NAME="C_M_AXI_GMEM1_ADDR_WIDTH" VALUE="64"/>
-        <PARAMETER NAME="C_M_AXI_GMEM1_DATA_WIDTH" VALUE="32"/>
-        <PARAMETER NAME="C_M_AXI_GMEM1_AWUSER_WIDTH" VALUE="1"/>
-        <PARAMETER NAME="C_M_AXI_GMEM1_ARUSER_WIDTH" VALUE="1"/>
-        <PARAMETER NAME="C_M_AXI_GMEM1_WUSER_WIDTH" VALUE="1"/>
-        <PARAMETER NAME="C_M_AXI_GMEM1_RUSER_WIDTH" VALUE="1"/>
-        <PARAMETER NAME="C_M_AXI_GMEM1_BUSER_WIDTH" VALUE="1"/>
-        <PARAMETER NAME="C_M_AXI_GMEM1_USER_VALUE" VALUE="0x00000000"/>
-        <PARAMETER NAME="C_M_AXI_GMEM1_PROT_VALUE" VALUE="&quot;000&quot;"/>
-        <PARAMETER NAME="C_M_AXI_GMEM1_CACHE_VALUE" VALUE="&quot;0011&quot;"/>
-        <PARAMETER NAME="C_M_AXI_GMEM0_ENABLE_ID_PORTS" VALUE="true"/>
-        <PARAMETER NAME="C_M_AXI_GMEM0_ENABLE_USER_PORTS" VALUE="false"/>
-        <PARAMETER NAME="C_M_AXI_GMEM1_ENABLE_ID_PORTS" VALUE="true"/>
-        <PARAMETER NAME="C_M_AXI_GMEM1_ENABLE_USER_PORTS" VALUE="false"/>
+        <PARAMETER NAME="C_M_AXI_GMEM_ID_WIDTH" VALUE="1"/>
+        <PARAMETER NAME="C_M_AXI_GMEM_ADDR_WIDTH" VALUE="64"/>
+        <PARAMETER NAME="C_M_AXI_GMEM_DATA_WIDTH" VALUE="32"/>
+        <PARAMETER NAME="C_M_AXI_GMEM_AWUSER_WIDTH" VALUE="1"/>
+        <PARAMETER NAME="C_M_AXI_GMEM_ARUSER_WIDTH" VALUE="1"/>
+        <PARAMETER NAME="C_M_AXI_GMEM_WUSER_WIDTH" VALUE="1"/>
+        <PARAMETER NAME="C_M_AXI_GMEM_RUSER_WIDTH" VALUE="1"/>
+        <PARAMETER NAME="C_M_AXI_GMEM_BUSER_WIDTH" VALUE="1"/>
+        <PARAMETER NAME="C_M_AXI_GMEM_USER_VALUE" VALUE="0x00000000"/>
+        <PARAMETER NAME="C_M_AXI_GMEM_PROT_VALUE" VALUE="&quot;000&quot;"/>
+        <PARAMETER NAME="C_M_AXI_GMEM_CACHE_VALUE" VALUE="&quot;0011&quot;"/>
+        <PARAMETER NAME="C_M_AXI_GMEM_ENABLE_ID_PORTS" VALUE="true"/>
+        <PARAMETER NAME="C_M_AXI_GMEM_ENABLE_USER_PORTS" VALUE="false"/>
         <PARAMETER NAME="Component_Name" VALUE="cosine_overlay_cosine_skip_0_0"/>
         <PARAMETER NAME="clk_period" VALUE="10"/>
         <PARAMETER NAME="machine" VALUE="64"/>
@@ -767,7 +894,7 @@
         <PARAMETER NAME="C_S_AXI_CONTROL_HIGHADDR" VALUE="0x4000FFFF"/>
       </PARAMETERS>
       <PORTS>
-        <PORT DIR="I" LEFT="6" NAME="s_axi_control_AWADDR" RIGHT="0" SIGIS="undef" SIGNAME="cosine_skip_0_s_axi_control_AWADDR">
+        <PORT DIR="I" LEFT="7" NAME="s_axi_control_AWADDR" RIGHT="0" SIGIS="undef" SIGNAME="cosine_skip_0_s_axi_control_AWADDR">
           <CONNECTIONS>
             <CONNECTION INSTANCE="ps7_0_axi_periph" PORT="M00_AXI_awaddr"/>
           </CONNECTIONS>
@@ -817,7 +944,7 @@
             <CONNECTION INSTANCE="ps7_0_axi_periph" PORT="M00_AXI_bready"/>
           </CONNECTIONS>
         </PORT>
-        <PORT DIR="I" LEFT="6" NAME="s_axi_control_ARADDR" RIGHT="0" SIGIS="undef" SIGNAME="cosine_skip_0_s_axi_control_ARADDR">
+        <PORT DIR="I" LEFT="7" NAME="s_axi_control_ARADDR" RIGHT="0" SIGIS="undef" SIGNAME="cosine_skip_0_s_axi_control_ARADDR">
           <CONNECTIONS>
             <CONNECTION INSTANCE="ps7_0_axi_periph" PORT="M00_AXI_araddr"/>
           </CONNECTIONS>
@@ -863,226 +990,118 @@
           </CONNECTIONS>
         </PORT>
         <PORT DIR="O" NAME="interrupt" SENSITIVITY="LEVEL_HIGH" SIGIS="INTERRUPT"/>
-        <PORT DIR="O" LEFT="0" NAME="m_axi_gmem0_AWID" RIGHT="0" SIGIS="undef"/>
-        <PORT DIR="O" LEFT="63" NAME="m_axi_gmem0_AWADDR" RIGHT="0" SIGIS="undef"/>
-        <PORT DIR="O" LEFT="7" NAME="m_axi_gmem0_AWLEN" RIGHT="0" SIGIS="undef"/>
-        <PORT DIR="O" LEFT="2" NAME="m_axi_gmem0_AWSIZE" RIGHT="0" SIGIS="undef"/>
-        <PORT DIR="O" LEFT="1" NAME="m_axi_gmem0_AWBURST" RIGHT="0" SIGIS="undef"/>
-        <PORT DIR="O" LEFT="1" NAME="m_axi_gmem0_AWLOCK" RIGHT="0" SIGIS="undef"/>
-        <PORT DIR="O" LEFT="3" NAME="m_axi_gmem0_AWREGION" RIGHT="0" SIGIS="undef"/>
-        <PORT DIR="O" LEFT="3" NAME="m_axi_gmem0_AWCACHE" RIGHT="0" SIGIS="undef"/>
-        <PORT DIR="O" LEFT="2" NAME="m_axi_gmem0_AWPROT" RIGHT="0" SIGIS="undef"/>
-        <PORT DIR="O" LEFT="3" NAME="m_axi_gmem0_AWQOS" RIGHT="0" SIGIS="undef"/>
-        <PORT DIR="O" NAME="m_axi_gmem0_AWVALID" SIGIS="undef"/>
-        <PORT DIR="I" NAME="m_axi_gmem0_AWREADY" SIGIS="undef"/>
-        <PORT DIR="O" LEFT="0" NAME="m_axi_gmem0_WID" RIGHT="0" SIGIS="undef"/>
-        <PORT DIR="O" LEFT="31" NAME="m_axi_gmem0_WDATA" RIGHT="0" SIGIS="undef"/>
-        <PORT DIR="O" LEFT="3" NAME="m_axi_gmem0_WSTRB" RIGHT="0" SIGIS="undef"/>
-        <PORT DIR="O" NAME="m_axi_gmem0_WLAST" SIGIS="undef"/>
-        <PORT DIR="O" NAME="m_axi_gmem0_WVALID" SIGIS="undef"/>
-        <PORT DIR="I" NAME="m_axi_gmem0_WREADY" SIGIS="undef"/>
-        <PORT DIR="I" LEFT="0" NAME="m_axi_gmem0_BID" RIGHT="0" SIGIS="undef"/>
-        <PORT DIR="I" LEFT="1" NAME="m_axi_gmem0_BRESP" RIGHT="0" SIGIS="undef"/>
-        <PORT DIR="I" NAME="m_axi_gmem0_BVALID" SIGIS="undef"/>
-        <PORT DIR="O" NAME="m_axi_gmem0_BREADY" SIGIS="undef"/>
-        <PORT DIR="O" LEFT="0" NAME="m_axi_gmem0_ARID" RIGHT="0" SIGIS="undef" SIGNAME="cosine_skip_0_m_axi_gmem0_ARID">
+        <PORT DIR="O" LEFT="0" NAME="m_axi_gmem_AWID" RIGHT="0" SIGIS="undef"/>
+        <PORT DIR="O" LEFT="63" NAME="m_axi_gmem_AWADDR" RIGHT="0" SIGIS="undef"/>
+        <PORT DIR="O" LEFT="7" NAME="m_axi_gmem_AWLEN" RIGHT="0" SIGIS="undef"/>
+        <PORT DIR="O" LEFT="2" NAME="m_axi_gmem_AWSIZE" RIGHT="0" SIGIS="undef"/>
+        <PORT DIR="O" LEFT="1" NAME="m_axi_gmem_AWBURST" RIGHT="0" SIGIS="undef"/>
+        <PORT DIR="O" LEFT="1" NAME="m_axi_gmem_AWLOCK" RIGHT="0" SIGIS="undef"/>
+        <PORT DIR="O" LEFT="3" NAME="m_axi_gmem_AWREGION" RIGHT="0" SIGIS="undef"/>
+        <PORT DIR="O" LEFT="3" NAME="m_axi_gmem_AWCACHE" RIGHT="0" SIGIS="undef"/>
+        <PORT DIR="O" LEFT="2" NAME="m_axi_gmem_AWPROT" RIGHT="0" SIGIS="undef"/>
+        <PORT DIR="O" LEFT="3" NAME="m_axi_gmem_AWQOS" RIGHT="0" SIGIS="undef"/>
+        <PORT DIR="O" NAME="m_axi_gmem_AWVALID" SIGIS="undef"/>
+        <PORT DIR="I" NAME="m_axi_gmem_AWREADY" SIGIS="undef"/>
+        <PORT DIR="O" LEFT="0" NAME="m_axi_gmem_WID" RIGHT="0" SIGIS="undef"/>
+        <PORT DIR="O" LEFT="31" NAME="m_axi_gmem_WDATA" RIGHT="0" SIGIS="undef"/>
+        <PORT DIR="O" LEFT="3" NAME="m_axi_gmem_WSTRB" RIGHT="0" SIGIS="undef"/>
+        <PORT DIR="O" NAME="m_axi_gmem_WLAST" SIGIS="undef"/>
+        <PORT DIR="O" NAME="m_axi_gmem_WVALID" SIGIS="undef"/>
+        <PORT DIR="I" NAME="m_axi_gmem_WREADY" SIGIS="undef"/>
+        <PORT DIR="I" LEFT="0" NAME="m_axi_gmem_BID" RIGHT="0" SIGIS="undef"/>
+        <PORT DIR="I" LEFT="1" NAME="m_axi_gmem_BRESP" RIGHT="0" SIGIS="undef"/>
+        <PORT DIR="I" NAME="m_axi_gmem_BVALID" SIGIS="undef"/>
+        <PORT DIR="O" NAME="m_axi_gmem_BREADY" SIGIS="undef"/>
+        <PORT DIR="O" LEFT="0" NAME="m_axi_gmem_ARID" RIGHT="0" SIGIS="undef" SIGNAME="cosine_skip_0_m_axi_gmem_ARID">
           <CONNECTIONS>
             <CONNECTION INSTANCE="smartconnect_0" PORT="S00_AXI_arid"/>
           </CONNECTIONS>
         </PORT>
-        <PORT DIR="O" LEFT="63" NAME="m_axi_gmem0_ARADDR" RIGHT="0" SIGIS="undef" SIGNAME="cosine_skip_0_m_axi_gmem0_ARADDR">
+        <PORT DIR="O" LEFT="63" NAME="m_axi_gmem_ARADDR" RIGHT="0" SIGIS="undef" SIGNAME="cosine_skip_0_m_axi_gmem_ARADDR">
           <CONNECTIONS>
             <CONNECTION INSTANCE="smartconnect_0" PORT="S00_AXI_araddr"/>
           </CONNECTIONS>
         </PORT>
-        <PORT DIR="O" LEFT="7" NAME="m_axi_gmem0_ARLEN" RIGHT="0" SIGIS="undef" SIGNAME="cosine_skip_0_m_axi_gmem0_ARLEN">
+        <PORT DIR="O" LEFT="7" NAME="m_axi_gmem_ARLEN" RIGHT="0" SIGIS="undef" SIGNAME="cosine_skip_0_m_axi_gmem_ARLEN">
           <CONNECTIONS>
             <CONNECTION INSTANCE="smartconnect_0" PORT="S00_AXI_arlen"/>
           </CONNECTIONS>
         </PORT>
-        <PORT DIR="O" LEFT="2" NAME="m_axi_gmem0_ARSIZE" RIGHT="0" SIGIS="undef" SIGNAME="cosine_skip_0_m_axi_gmem0_ARSIZE">
+        <PORT DIR="O" LEFT="2" NAME="m_axi_gmem_ARSIZE" RIGHT="0" SIGIS="undef" SIGNAME="cosine_skip_0_m_axi_gmem_ARSIZE">
           <CONNECTIONS>
             <CONNECTION INSTANCE="smartconnect_0" PORT="S00_AXI_arsize"/>
           </CONNECTIONS>
         </PORT>
-        <PORT DIR="O" LEFT="1" NAME="m_axi_gmem0_ARBURST" RIGHT="0" SIGIS="undef" SIGNAME="cosine_skip_0_m_axi_gmem0_ARBURST">
+        <PORT DIR="O" LEFT="1" NAME="m_axi_gmem_ARBURST" RIGHT="0" SIGIS="undef" SIGNAME="cosine_skip_0_m_axi_gmem_ARBURST">
           <CONNECTIONS>
             <CONNECTION INSTANCE="smartconnect_0" PORT="S00_AXI_arburst"/>
           </CONNECTIONS>
         </PORT>
-        <PORT DIR="O" LEFT="1" NAME="m_axi_gmem0_ARLOCK" RIGHT="0" SIGIS="undef" SIGNAME="cosine_skip_0_m_axi_gmem0_ARLOCK">
+        <PORT DIR="O" LEFT="1" NAME="m_axi_gmem_ARLOCK" RIGHT="0" SIGIS="undef" SIGNAME="cosine_skip_0_m_axi_gmem_ARLOCK">
           <CONNECTIONS>
             <CONNECTION INSTANCE="smartconnect_0" PORT="S00_AXI_arlock"/>
           </CONNECTIONS>
         </PORT>
-        <PORT DIR="O" LEFT="3" NAME="m_axi_gmem0_ARREGION" RIGHT="0" SIGIS="undef"/>
-        <PORT DIR="O" LEFT="3" NAME="m_axi_gmem0_ARCACHE" RIGHT="0" SIGIS="undef" SIGNAME="cosine_skip_0_m_axi_gmem0_ARCACHE">
+        <PORT DIR="O" LEFT="3" NAME="m_axi_gmem_ARREGION" RIGHT="0" SIGIS="undef"/>
+        <PORT DIR="O" LEFT="3" NAME="m_axi_gmem_ARCACHE" RIGHT="0" SIGIS="undef" SIGNAME="cosine_skip_0_m_axi_gmem_ARCACHE">
           <CONNECTIONS>
             <CONNECTION INSTANCE="smartconnect_0" PORT="S00_AXI_arcache"/>
           </CONNECTIONS>
         </PORT>
-        <PORT DIR="O" LEFT="2" NAME="m_axi_gmem0_ARPROT" RIGHT="0" SIGIS="undef" SIGNAME="cosine_skip_0_m_axi_gmem0_ARPROT">
+        <PORT DIR="O" LEFT="2" NAME="m_axi_gmem_ARPROT" RIGHT="0" SIGIS="undef" SIGNAME="cosine_skip_0_m_axi_gmem_ARPROT">
           <CONNECTIONS>
             <CONNECTION INSTANCE="smartconnect_0" PORT="S00_AXI_arprot"/>
           </CONNECTIONS>
         </PORT>
-        <PORT DIR="O" LEFT="3" NAME="m_axi_gmem0_ARQOS" RIGHT="0" SIGIS="undef" SIGNAME="cosine_skip_0_m_axi_gmem0_ARQOS">
+        <PORT DIR="O" LEFT="3" NAME="m_axi_gmem_ARQOS" RIGHT="0" SIGIS="undef" SIGNAME="cosine_skip_0_m_axi_gmem_ARQOS">
           <CONNECTIONS>
             <CONNECTION INSTANCE="smartconnect_0" PORT="S00_AXI_arqos"/>
           </CONNECTIONS>
         </PORT>
-        <PORT DIR="O" NAME="m_axi_gmem0_ARVALID" SIGIS="undef" SIGNAME="cosine_skip_0_m_axi_gmem0_ARVALID">
+        <PORT DIR="O" NAME="m_axi_gmem_ARVALID" SIGIS="undef" SIGNAME="cosine_skip_0_m_axi_gmem_ARVALID">
           <CONNECTIONS>
             <CONNECTION INSTANCE="smartconnect_0" PORT="S00_AXI_arvalid"/>
           </CONNECTIONS>
         </PORT>
-        <PORT DIR="I" NAME="m_axi_gmem0_ARREADY" SIGIS="undef" SIGNAME="cosine_skip_0_m_axi_gmem0_ARREADY">
+        <PORT DIR="I" NAME="m_axi_gmem_ARREADY" SIGIS="undef" SIGNAME="cosine_skip_0_m_axi_gmem_ARREADY">
           <CONNECTIONS>
             <CONNECTION INSTANCE="smartconnect_0" PORT="S00_AXI_arready"/>
           </CONNECTIONS>
         </PORT>
-        <PORT DIR="I" LEFT="0" NAME="m_axi_gmem0_RID" RIGHT="0" SIGIS="undef" SIGNAME="cosine_skip_0_m_axi_gmem0_RID">
+        <PORT DIR="I" LEFT="0" NAME="m_axi_gmem_RID" RIGHT="0" SIGIS="undef" SIGNAME="cosine_skip_0_m_axi_gmem_RID">
           <CONNECTIONS>
             <CONNECTION INSTANCE="smartconnect_0" PORT="S00_AXI_rid"/>
           </CONNECTIONS>
         </PORT>
-        <PORT DIR="I" LEFT="31" NAME="m_axi_gmem0_RDATA" RIGHT="0" SIGIS="undef" SIGNAME="cosine_skip_0_m_axi_gmem0_RDATA">
+        <PORT DIR="I" LEFT="31" NAME="m_axi_gmem_RDATA" RIGHT="0" SIGIS="undef" SIGNAME="cosine_skip_0_m_axi_gmem_RDATA">
           <CONNECTIONS>
             <CONNECTION INSTANCE="smartconnect_0" PORT="S00_AXI_rdata"/>
           </CONNECTIONS>
         </PORT>
-        <PORT DIR="I" LEFT="1" NAME="m_axi_gmem0_RRESP" RIGHT="0" SIGIS="undef" SIGNAME="cosine_skip_0_m_axi_gmem0_RRESP">
+        <PORT DIR="I" LEFT="1" NAME="m_axi_gmem_RRESP" RIGHT="0" SIGIS="undef" SIGNAME="cosine_skip_0_m_axi_gmem_RRESP">
           <CONNECTIONS>
             <CONNECTION INSTANCE="smartconnect_0" PORT="S00_AXI_rresp"/>
           </CONNECTIONS>
         </PORT>
-        <PORT DIR="I" NAME="m_axi_gmem0_RLAST" SIGIS="undef" SIGNAME="cosine_skip_0_m_axi_gmem0_RLAST">
+        <PORT DIR="I" NAME="m_axi_gmem_RLAST" SIGIS="undef" SIGNAME="cosine_skip_0_m_axi_gmem_RLAST">
           <CONNECTIONS>
             <CONNECTION INSTANCE="smartconnect_0" PORT="S00_AXI_rlast"/>
           </CONNECTIONS>
         </PORT>
-        <PORT DIR="I" NAME="m_axi_gmem0_RVALID" SIGIS="undef" SIGNAME="cosine_skip_0_m_axi_gmem0_RVALID">
+        <PORT DIR="I" NAME="m_axi_gmem_RVALID" SIGIS="undef" SIGNAME="cosine_skip_0_m_axi_gmem_RVALID">
           <CONNECTIONS>
             <CONNECTION INSTANCE="smartconnect_0" PORT="S00_AXI_rvalid"/>
           </CONNECTIONS>
         </PORT>
-        <PORT DIR="O" NAME="m_axi_gmem0_RREADY" SIGIS="undef" SIGNAME="cosine_skip_0_m_axi_gmem0_RREADY">
+        <PORT DIR="O" NAME="m_axi_gmem_RREADY" SIGIS="undef" SIGNAME="cosine_skip_0_m_axi_gmem_RREADY">
           <CONNECTIONS>
             <CONNECTION INSTANCE="smartconnect_0" PORT="S00_AXI_rready"/>
-          </CONNECTIONS>
-        </PORT>
-        <PORT DIR="O" LEFT="0" NAME="m_axi_gmem1_AWID" RIGHT="0" SIGIS="undef"/>
-        <PORT DIR="O" LEFT="63" NAME="m_axi_gmem1_AWADDR" RIGHT="0" SIGIS="undef"/>
-        <PORT DIR="O" LEFT="7" NAME="m_axi_gmem1_AWLEN" RIGHT="0" SIGIS="undef"/>
-        <PORT DIR="O" LEFT="2" NAME="m_axi_gmem1_AWSIZE" RIGHT="0" SIGIS="undef"/>
-        <PORT DIR="O" LEFT="1" NAME="m_axi_gmem1_AWBURST" RIGHT="0" SIGIS="undef"/>
-        <PORT DIR="O" LEFT="1" NAME="m_axi_gmem1_AWLOCK" RIGHT="0" SIGIS="undef"/>
-        <PORT DIR="O" LEFT="3" NAME="m_axi_gmem1_AWREGION" RIGHT="0" SIGIS="undef"/>
-        <PORT DIR="O" LEFT="3" NAME="m_axi_gmem1_AWCACHE" RIGHT="0" SIGIS="undef"/>
-        <PORT DIR="O" LEFT="2" NAME="m_axi_gmem1_AWPROT" RIGHT="0" SIGIS="undef"/>
-        <PORT DIR="O" LEFT="3" NAME="m_axi_gmem1_AWQOS" RIGHT="0" SIGIS="undef"/>
-        <PORT DIR="O" NAME="m_axi_gmem1_AWVALID" SIGIS="undef"/>
-        <PORT DIR="I" NAME="m_axi_gmem1_AWREADY" SIGIS="undef"/>
-        <PORT DIR="O" LEFT="0" NAME="m_axi_gmem1_WID" RIGHT="0" SIGIS="undef"/>
-        <PORT DIR="O" LEFT="31" NAME="m_axi_gmem1_WDATA" RIGHT="0" SIGIS="undef"/>
-        <PORT DIR="O" LEFT="3" NAME="m_axi_gmem1_WSTRB" RIGHT="0" SIGIS="undef"/>
-        <PORT DIR="O" NAME="m_axi_gmem1_WLAST" SIGIS="undef"/>
-        <PORT DIR="O" NAME="m_axi_gmem1_WVALID" SIGIS="undef"/>
-        <PORT DIR="I" NAME="m_axi_gmem1_WREADY" SIGIS="undef"/>
-        <PORT DIR="I" LEFT="0" NAME="m_axi_gmem1_BID" RIGHT="0" SIGIS="undef"/>
-        <PORT DIR="I" LEFT="1" NAME="m_axi_gmem1_BRESP" RIGHT="0" SIGIS="undef"/>
-        <PORT DIR="I" NAME="m_axi_gmem1_BVALID" SIGIS="undef"/>
-        <PORT DIR="O" NAME="m_axi_gmem1_BREADY" SIGIS="undef"/>
-        <PORT DIR="O" LEFT="0" NAME="m_axi_gmem1_ARID" RIGHT="0" SIGIS="undef" SIGNAME="cosine_skip_0_m_axi_gmem1_ARID">
-          <CONNECTIONS>
-            <CONNECTION INSTANCE="smartconnect_0" PORT="S01_AXI_arid"/>
-          </CONNECTIONS>
-        </PORT>
-        <PORT DIR="O" LEFT="63" NAME="m_axi_gmem1_ARADDR" RIGHT="0" SIGIS="undef" SIGNAME="cosine_skip_0_m_axi_gmem1_ARADDR">
-          <CONNECTIONS>
-            <CONNECTION INSTANCE="smartconnect_0" PORT="S01_AXI_araddr"/>
-          </CONNECTIONS>
-        </PORT>
-        <PORT DIR="O" LEFT="7" NAME="m_axi_gmem1_ARLEN" RIGHT="0" SIGIS="undef" SIGNAME="cosine_skip_0_m_axi_gmem1_ARLEN">
-          <CONNECTIONS>
-            <CONNECTION INSTANCE="smartconnect_0" PORT="S01_AXI_arlen"/>
-          </CONNECTIONS>
-        </PORT>
-        <PORT DIR="O" LEFT="2" NAME="m_axi_gmem1_ARSIZE" RIGHT="0" SIGIS="undef" SIGNAME="cosine_skip_0_m_axi_gmem1_ARSIZE">
-          <CONNECTIONS>
-            <CONNECTION INSTANCE="smartconnect_0" PORT="S01_AXI_arsize"/>
-          </CONNECTIONS>
-        </PORT>
-        <PORT DIR="O" LEFT="1" NAME="m_axi_gmem1_ARBURST" RIGHT="0" SIGIS="undef" SIGNAME="cosine_skip_0_m_axi_gmem1_ARBURST">
-          <CONNECTIONS>
-            <CONNECTION INSTANCE="smartconnect_0" PORT="S01_AXI_arburst"/>
-          </CONNECTIONS>
-        </PORT>
-        <PORT DIR="O" LEFT="1" NAME="m_axi_gmem1_ARLOCK" RIGHT="0" SIGIS="undef" SIGNAME="cosine_skip_0_m_axi_gmem1_ARLOCK">
-          <CONNECTIONS>
-            <CONNECTION INSTANCE="smartconnect_0" PORT="S01_AXI_arlock"/>
-          </CONNECTIONS>
-        </PORT>
-        <PORT DIR="O" LEFT="3" NAME="m_axi_gmem1_ARREGION" RIGHT="0" SIGIS="undef"/>
-        <PORT DIR="O" LEFT="3" NAME="m_axi_gmem1_ARCACHE" RIGHT="0" SIGIS="undef" SIGNAME="cosine_skip_0_m_axi_gmem1_ARCACHE">
-          <CONNECTIONS>
-            <CONNECTION INSTANCE="smartconnect_0" PORT="S01_AXI_arcache"/>
-          </CONNECTIONS>
-        </PORT>
-        <PORT DIR="O" LEFT="2" NAME="m_axi_gmem1_ARPROT" RIGHT="0" SIGIS="undef" SIGNAME="cosine_skip_0_m_axi_gmem1_ARPROT">
-          <CONNECTIONS>
-            <CONNECTION INSTANCE="smartconnect_0" PORT="S01_AXI_arprot"/>
-          </CONNECTIONS>
-        </PORT>
-        <PORT DIR="O" LEFT="3" NAME="m_axi_gmem1_ARQOS" RIGHT="0" SIGIS="undef" SIGNAME="cosine_skip_0_m_axi_gmem1_ARQOS">
-          <CONNECTIONS>
-            <CONNECTION INSTANCE="smartconnect_0" PORT="S01_AXI_arqos"/>
-          </CONNECTIONS>
-        </PORT>
-        <PORT DIR="O" NAME="m_axi_gmem1_ARVALID" SIGIS="undef" SIGNAME="cosine_skip_0_m_axi_gmem1_ARVALID">
-          <CONNECTIONS>
-            <CONNECTION INSTANCE="smartconnect_0" PORT="S01_AXI_arvalid"/>
-          </CONNECTIONS>
-        </PORT>
-        <PORT DIR="I" NAME="m_axi_gmem1_ARREADY" SIGIS="undef" SIGNAME="cosine_skip_0_m_axi_gmem1_ARREADY">
-          <CONNECTIONS>
-            <CONNECTION INSTANCE="smartconnect_0" PORT="S01_AXI_arready"/>
-          </CONNECTIONS>
-        </PORT>
-        <PORT DIR="I" LEFT="0" NAME="m_axi_gmem1_RID" RIGHT="0" SIGIS="undef" SIGNAME="cosine_skip_0_m_axi_gmem1_RID">
-          <CONNECTIONS>
-            <CONNECTION INSTANCE="smartconnect_0" PORT="S01_AXI_rid"/>
-          </CONNECTIONS>
-        </PORT>
-        <PORT DIR="I" LEFT="31" NAME="m_axi_gmem1_RDATA" RIGHT="0" SIGIS="undef" SIGNAME="cosine_skip_0_m_axi_gmem1_RDATA">
-          <CONNECTIONS>
-            <CONNECTION INSTANCE="smartconnect_0" PORT="S01_AXI_rdata"/>
-          </CONNECTIONS>
-        </PORT>
-        <PORT DIR="I" LEFT="1" NAME="m_axi_gmem1_RRESP" RIGHT="0" SIGIS="undef" SIGNAME="cosine_skip_0_m_axi_gmem1_RRESP">
-          <CONNECTIONS>
-            <CONNECTION INSTANCE="smartconnect_0" PORT="S01_AXI_rresp"/>
-          </CONNECTIONS>
-        </PORT>
-        <PORT DIR="I" NAME="m_axi_gmem1_RLAST" SIGIS="undef" SIGNAME="cosine_skip_0_m_axi_gmem1_RLAST">
-          <CONNECTIONS>
-            <CONNECTION INSTANCE="smartconnect_0" PORT="S01_AXI_rlast"/>
-          </CONNECTIONS>
-        </PORT>
-        <PORT DIR="I" NAME="m_axi_gmem1_RVALID" SIGIS="undef" SIGNAME="cosine_skip_0_m_axi_gmem1_RVALID">
-          <CONNECTIONS>
-            <CONNECTION INSTANCE="smartconnect_0" PORT="S01_AXI_rvalid"/>
-          </CONNECTIONS>
-        </PORT>
-        <PORT DIR="O" NAME="m_axi_gmem1_RREADY" SIGIS="undef" SIGNAME="cosine_skip_0_m_axi_gmem1_RREADY">
-          <CONNECTIONS>
-            <CONNECTION INSTANCE="smartconnect_0" PORT="S01_AXI_rready"/>
           </CONNECTIONS>
         </PORT>
       </PORTS>
       <BUSINTERFACES>
         <BUSINTERFACE BUSNAME="ps7_0_axi_periph_M00_AXI" DATAWIDTH="32" NAME="s_axi_control" TYPE="SLAVE" VLNV="xilinx.com:interface:aximm:1.0">
-          <PARAMETER NAME="ADDR_WIDTH" VALUE="7"/>
+          <PARAMETER NAME="ADDR_WIDTH" VALUE="8"/>
           <PARAMETER NAME="DATA_WIDTH" VALUE="32"/>
           <PARAMETER NAME="PROTOCOL" VALUE="AXI4LITE"/>
           <PARAMETER NAME="READ_WRITE_MODE" VALUE="READ_WRITE"/>
@@ -1133,7 +1152,7 @@
             <PORTMAP LOGICAL="RREADY" PHYSICAL="s_axi_control_RREADY"/>
           </PORTMAPS>
         </BUSINTERFACE>
-        <BUSINTERFACE BUSNAME="cosine_skip_0_m_axi_gmem0" DATAWIDTH="32" NAME="m_axi_gmem0" TYPE="MASTER" VLNV="xilinx.com:interface:aximm:1.0">
+        <BUSINTERFACE BUSNAME="cosine_skip_0_m_axi_gmem" DATAWIDTH="32" NAME="m_axi_gmem" TYPE="MASTER" VLNV="xilinx.com:interface:aximm:1.0">
           <PARAMETER NAME="NUM_READ_OUTSTANDING" VALUE="8"/>
           <PARAMETER NAME="NUM_WRITE_OUTSTANDING" VALUE="16"/>
           <PARAMETER NAME="MAX_READ_BURST_LENGTH" VALUE="64"/>
@@ -1168,129 +1187,51 @@
           <PARAMETER NAME="WUSER_BITS_PER_BYTE" VALUE="0"/>
           <PARAMETER NAME="INSERT_VIP" VALUE="0"/>
           <PORTMAPS>
-            <PORTMAP LOGICAL="AWID" PHYSICAL="m_axi_gmem0_AWID"/>
-            <PORTMAP LOGICAL="AWADDR" PHYSICAL="m_axi_gmem0_AWADDR"/>
-            <PORTMAP LOGICAL="AWLEN" PHYSICAL="m_axi_gmem0_AWLEN"/>
-            <PORTMAP LOGICAL="AWSIZE" PHYSICAL="m_axi_gmem0_AWSIZE"/>
-            <PORTMAP LOGICAL="AWBURST" PHYSICAL="m_axi_gmem0_AWBURST"/>
-            <PORTMAP LOGICAL="AWLOCK" PHYSICAL="m_axi_gmem0_AWLOCK"/>
-            <PORTMAP LOGICAL="AWREGION" PHYSICAL="m_axi_gmem0_AWREGION"/>
-            <PORTMAP LOGICAL="AWCACHE" PHYSICAL="m_axi_gmem0_AWCACHE"/>
-            <PORTMAP LOGICAL="AWPROT" PHYSICAL="m_axi_gmem0_AWPROT"/>
-            <PORTMAP LOGICAL="AWQOS" PHYSICAL="m_axi_gmem0_AWQOS"/>
-            <PORTMAP LOGICAL="AWVALID" PHYSICAL="m_axi_gmem0_AWVALID"/>
-            <PORTMAP LOGICAL="AWREADY" PHYSICAL="m_axi_gmem0_AWREADY"/>
-            <PORTMAP LOGICAL="WID" PHYSICAL="m_axi_gmem0_WID"/>
-            <PORTMAP LOGICAL="WDATA" PHYSICAL="m_axi_gmem0_WDATA"/>
-            <PORTMAP LOGICAL="WSTRB" PHYSICAL="m_axi_gmem0_WSTRB"/>
-            <PORTMAP LOGICAL="WLAST" PHYSICAL="m_axi_gmem0_WLAST"/>
-            <PORTMAP LOGICAL="WVALID" PHYSICAL="m_axi_gmem0_WVALID"/>
-            <PORTMAP LOGICAL="WREADY" PHYSICAL="m_axi_gmem0_WREADY"/>
-            <PORTMAP LOGICAL="BID" PHYSICAL="m_axi_gmem0_BID"/>
-            <PORTMAP LOGICAL="BRESP" PHYSICAL="m_axi_gmem0_BRESP"/>
-            <PORTMAP LOGICAL="BVALID" PHYSICAL="m_axi_gmem0_BVALID"/>
-            <PORTMAP LOGICAL="BREADY" PHYSICAL="m_axi_gmem0_BREADY"/>
-            <PORTMAP LOGICAL="ARID" PHYSICAL="m_axi_gmem0_ARID"/>
-            <PORTMAP LOGICAL="ARADDR" PHYSICAL="m_axi_gmem0_ARADDR"/>
-            <PORTMAP LOGICAL="ARLEN" PHYSICAL="m_axi_gmem0_ARLEN"/>
-            <PORTMAP LOGICAL="ARSIZE" PHYSICAL="m_axi_gmem0_ARSIZE"/>
-            <PORTMAP LOGICAL="ARBURST" PHYSICAL="m_axi_gmem0_ARBURST"/>
-            <PORTMAP LOGICAL="ARLOCK" PHYSICAL="m_axi_gmem0_ARLOCK"/>
-            <PORTMAP LOGICAL="ARREGION" PHYSICAL="m_axi_gmem0_ARREGION"/>
-            <PORTMAP LOGICAL="ARCACHE" PHYSICAL="m_axi_gmem0_ARCACHE"/>
-            <PORTMAP LOGICAL="ARPROT" PHYSICAL="m_axi_gmem0_ARPROT"/>
-            <PORTMAP LOGICAL="ARQOS" PHYSICAL="m_axi_gmem0_ARQOS"/>
-            <PORTMAP LOGICAL="ARVALID" PHYSICAL="m_axi_gmem0_ARVALID"/>
-            <PORTMAP LOGICAL="ARREADY" PHYSICAL="m_axi_gmem0_ARREADY"/>
-            <PORTMAP LOGICAL="RID" PHYSICAL="m_axi_gmem0_RID"/>
-            <PORTMAP LOGICAL="RDATA" PHYSICAL="m_axi_gmem0_RDATA"/>
-            <PORTMAP LOGICAL="RRESP" PHYSICAL="m_axi_gmem0_RRESP"/>
-            <PORTMAP LOGICAL="RLAST" PHYSICAL="m_axi_gmem0_RLAST"/>
-            <PORTMAP LOGICAL="RVALID" PHYSICAL="m_axi_gmem0_RVALID"/>
-            <PORTMAP LOGICAL="RREADY" PHYSICAL="m_axi_gmem0_RREADY"/>
-          </PORTMAPS>
-        </BUSINTERFACE>
-        <BUSINTERFACE BUSNAME="cosine_skip_0_m_axi_gmem1" DATAWIDTH="32" NAME="m_axi_gmem1" TYPE="MASTER" VLNV="xilinx.com:interface:aximm:1.0">
-          <PARAMETER NAME="NUM_READ_OUTSTANDING" VALUE="8"/>
-          <PARAMETER NAME="NUM_WRITE_OUTSTANDING" VALUE="16"/>
-          <PARAMETER NAME="MAX_READ_BURST_LENGTH" VALUE="64"/>
-          <PARAMETER NAME="MAX_WRITE_BURST_LENGTH" VALUE="16"/>
-          <PARAMETER NAME="MAX_BURST_LENGTH" VALUE="256"/>
-          <PARAMETER NAME="PROTOCOL" VALUE="AXI4"/>
-          <PARAMETER NAME="READ_WRITE_MODE" VALUE="READ_ONLY"/>
-          <PARAMETER NAME="HAS_BURST" VALUE="0"/>
-          <PARAMETER NAME="SUPPORTS_NARROW_BURST" VALUE="0"/>
-          <PARAMETER NAME="DATA_WIDTH" VALUE="32"/>
-          <PARAMETER NAME="FREQ_HZ" VALUE="100000000"/>
-          <PARAMETER NAME="ID_WIDTH" VALUE="1"/>
-          <PARAMETER NAME="ADDR_WIDTH" VALUE="64"/>
-          <PARAMETER NAME="AWUSER_WIDTH" VALUE="0"/>
-          <PARAMETER NAME="ARUSER_WIDTH" VALUE="0"/>
-          <PARAMETER NAME="WUSER_WIDTH" VALUE="0"/>
-          <PARAMETER NAME="RUSER_WIDTH" VALUE="0"/>
-          <PARAMETER NAME="BUSER_WIDTH" VALUE="0"/>
-          <PARAMETER NAME="HAS_LOCK" VALUE="1"/>
-          <PARAMETER NAME="HAS_PROT" VALUE="1"/>
-          <PARAMETER NAME="HAS_CACHE" VALUE="1"/>
-          <PARAMETER NAME="HAS_QOS" VALUE="1"/>
-          <PARAMETER NAME="HAS_REGION" VALUE="1"/>
-          <PARAMETER NAME="HAS_WSTRB" VALUE="1"/>
-          <PARAMETER NAME="HAS_BRESP" VALUE="1"/>
-          <PARAMETER NAME="HAS_RRESP" VALUE="1"/>
-          <PARAMETER NAME="PHASE" VALUE="0.0"/>
-          <PARAMETER NAME="CLK_DOMAIN" VALUE="cosine_overlay_processing_system7_0_0_FCLK_CLK0"/>
-          <PARAMETER NAME="NUM_READ_THREADS" VALUE="1"/>
-          <PARAMETER NAME="NUM_WRITE_THREADS" VALUE="1"/>
-          <PARAMETER NAME="RUSER_BITS_PER_BYTE" VALUE="0"/>
-          <PARAMETER NAME="WUSER_BITS_PER_BYTE" VALUE="0"/>
-          <PARAMETER NAME="INSERT_VIP" VALUE="0"/>
-          <PORTMAPS>
-            <PORTMAP LOGICAL="AWID" PHYSICAL="m_axi_gmem1_AWID"/>
-            <PORTMAP LOGICAL="AWADDR" PHYSICAL="m_axi_gmem1_AWADDR"/>
-            <PORTMAP LOGICAL="AWLEN" PHYSICAL="m_axi_gmem1_AWLEN"/>
-            <PORTMAP LOGICAL="AWSIZE" PHYSICAL="m_axi_gmem1_AWSIZE"/>
-            <PORTMAP LOGICAL="AWBURST" PHYSICAL="m_axi_gmem1_AWBURST"/>
-            <PORTMAP LOGICAL="AWLOCK" PHYSICAL="m_axi_gmem1_AWLOCK"/>
-            <PORTMAP LOGICAL="AWREGION" PHYSICAL="m_axi_gmem1_AWREGION"/>
-            <PORTMAP LOGICAL="AWCACHE" PHYSICAL="m_axi_gmem1_AWCACHE"/>
-            <PORTMAP LOGICAL="AWPROT" PHYSICAL="m_axi_gmem1_AWPROT"/>
-            <PORTMAP LOGICAL="AWQOS" PHYSICAL="m_axi_gmem1_AWQOS"/>
-            <PORTMAP LOGICAL="AWVALID" PHYSICAL="m_axi_gmem1_AWVALID"/>
-            <PORTMAP LOGICAL="AWREADY" PHYSICAL="m_axi_gmem1_AWREADY"/>
-            <PORTMAP LOGICAL="WID" PHYSICAL="m_axi_gmem1_WID"/>
-            <PORTMAP LOGICAL="WDATA" PHYSICAL="m_axi_gmem1_WDATA"/>
-            <PORTMAP LOGICAL="WSTRB" PHYSICAL="m_axi_gmem1_WSTRB"/>
-            <PORTMAP LOGICAL="WLAST" PHYSICAL="m_axi_gmem1_WLAST"/>
-            <PORTMAP LOGICAL="WVALID" PHYSICAL="m_axi_gmem1_WVALID"/>
-            <PORTMAP LOGICAL="WREADY" PHYSICAL="m_axi_gmem1_WREADY"/>
-            <PORTMAP LOGICAL="BID" PHYSICAL="m_axi_gmem1_BID"/>
-            <PORTMAP LOGICAL="BRESP" PHYSICAL="m_axi_gmem1_BRESP"/>
-            <PORTMAP LOGICAL="BVALID" PHYSICAL="m_axi_gmem1_BVALID"/>
-            <PORTMAP LOGICAL="BREADY" PHYSICAL="m_axi_gmem1_BREADY"/>
-            <PORTMAP LOGICAL="ARID" PHYSICAL="m_axi_gmem1_ARID"/>
-            <PORTMAP LOGICAL="ARADDR" PHYSICAL="m_axi_gmem1_ARADDR"/>
-            <PORTMAP LOGICAL="ARLEN" PHYSICAL="m_axi_gmem1_ARLEN"/>
-            <PORTMAP LOGICAL="ARSIZE" PHYSICAL="m_axi_gmem1_ARSIZE"/>
-            <PORTMAP LOGICAL="ARBURST" PHYSICAL="m_axi_gmem1_ARBURST"/>
-            <PORTMAP LOGICAL="ARLOCK" PHYSICAL="m_axi_gmem1_ARLOCK"/>
-            <PORTMAP LOGICAL="ARREGION" PHYSICAL="m_axi_gmem1_ARREGION"/>
-            <PORTMAP LOGICAL="ARCACHE" PHYSICAL="m_axi_gmem1_ARCACHE"/>
-            <PORTMAP LOGICAL="ARPROT" PHYSICAL="m_axi_gmem1_ARPROT"/>
-            <PORTMAP LOGICAL="ARQOS" PHYSICAL="m_axi_gmem1_ARQOS"/>
-            <PORTMAP LOGICAL="ARVALID" PHYSICAL="m_axi_gmem1_ARVALID"/>
-            <PORTMAP LOGICAL="ARREADY" PHYSICAL="m_axi_gmem1_ARREADY"/>
-            <PORTMAP LOGICAL="RID" PHYSICAL="m_axi_gmem1_RID"/>
-            <PORTMAP LOGICAL="RDATA" PHYSICAL="m_axi_gmem1_RDATA"/>
-            <PORTMAP LOGICAL="RRESP" PHYSICAL="m_axi_gmem1_RRESP"/>
-            <PORTMAP LOGICAL="RLAST" PHYSICAL="m_axi_gmem1_RLAST"/>
-            <PORTMAP LOGICAL="RVALID" PHYSICAL="m_axi_gmem1_RVALID"/>
-            <PORTMAP LOGICAL="RREADY" PHYSICAL="m_axi_gmem1_RREADY"/>
+            <PORTMAP LOGICAL="AWID" PHYSICAL="m_axi_gmem_AWID"/>
+            <PORTMAP LOGICAL="AWADDR" PHYSICAL="m_axi_gmem_AWADDR"/>
+            <PORTMAP LOGICAL="AWLEN" PHYSICAL="m_axi_gmem_AWLEN"/>
+            <PORTMAP LOGICAL="AWSIZE" PHYSICAL="m_axi_gmem_AWSIZE"/>
+            <PORTMAP LOGICAL="AWBURST" PHYSICAL="m_axi_gmem_AWBURST"/>
+            <PORTMAP LOGICAL="AWLOCK" PHYSICAL="m_axi_gmem_AWLOCK"/>
+            <PORTMAP LOGICAL="AWREGION" PHYSICAL="m_axi_gmem_AWREGION"/>
+            <PORTMAP LOGICAL="AWCACHE" PHYSICAL="m_axi_gmem_AWCACHE"/>
+            <PORTMAP LOGICAL="AWPROT" PHYSICAL="m_axi_gmem_AWPROT"/>
+            <PORTMAP LOGICAL="AWQOS" PHYSICAL="m_axi_gmem_AWQOS"/>
+            <PORTMAP LOGICAL="AWVALID" PHYSICAL="m_axi_gmem_AWVALID"/>
+            <PORTMAP LOGICAL="AWREADY" PHYSICAL="m_axi_gmem_AWREADY"/>
+            <PORTMAP LOGICAL="WID" PHYSICAL="m_axi_gmem_WID"/>
+            <PORTMAP LOGICAL="WDATA" PHYSICAL="m_axi_gmem_WDATA"/>
+            <PORTMAP LOGICAL="WSTRB" PHYSICAL="m_axi_gmem_WSTRB"/>
+            <PORTMAP LOGICAL="WLAST" PHYSICAL="m_axi_gmem_WLAST"/>
+            <PORTMAP LOGICAL="WVALID" PHYSICAL="m_axi_gmem_WVALID"/>
+            <PORTMAP LOGICAL="WREADY" PHYSICAL="m_axi_gmem_WREADY"/>
+            <PORTMAP LOGICAL="BID" PHYSICAL="m_axi_gmem_BID"/>
+            <PORTMAP LOGICAL="BRESP" PHYSICAL="m_axi_gmem_BRESP"/>
+            <PORTMAP LOGICAL="BVALID" PHYSICAL="m_axi_gmem_BVALID"/>
+            <PORTMAP LOGICAL="BREADY" PHYSICAL="m_axi_gmem_BREADY"/>
+            <PORTMAP LOGICAL="ARID" PHYSICAL="m_axi_gmem_ARID"/>
+            <PORTMAP LOGICAL="ARADDR" PHYSICAL="m_axi_gmem_ARADDR"/>
+            <PORTMAP LOGICAL="ARLEN" PHYSICAL="m_axi_gmem_ARLEN"/>
+            <PORTMAP LOGICAL="ARSIZE" PHYSICAL="m_axi_gmem_ARSIZE"/>
+            <PORTMAP LOGICAL="ARBURST" PHYSICAL="m_axi_gmem_ARBURST"/>
+            <PORTMAP LOGICAL="ARLOCK" PHYSICAL="m_axi_gmem_ARLOCK"/>
+            <PORTMAP LOGICAL="ARREGION" PHYSICAL="m_axi_gmem_ARREGION"/>
+            <PORTMAP LOGICAL="ARCACHE" PHYSICAL="m_axi_gmem_ARCACHE"/>
+            <PORTMAP LOGICAL="ARPROT" PHYSICAL="m_axi_gmem_ARPROT"/>
+            <PORTMAP LOGICAL="ARQOS" PHYSICAL="m_axi_gmem_ARQOS"/>
+            <PORTMAP LOGICAL="ARVALID" PHYSICAL="m_axi_gmem_ARVALID"/>
+            <PORTMAP LOGICAL="ARREADY" PHYSICAL="m_axi_gmem_ARREADY"/>
+            <PORTMAP LOGICAL="RID" PHYSICAL="m_axi_gmem_RID"/>
+            <PORTMAP LOGICAL="RDATA" PHYSICAL="m_axi_gmem_RDATA"/>
+            <PORTMAP LOGICAL="RRESP" PHYSICAL="m_axi_gmem_RRESP"/>
+            <PORTMAP LOGICAL="RLAST" PHYSICAL="m_axi_gmem_RLAST"/>
+            <PORTMAP LOGICAL="RVALID" PHYSICAL="m_axi_gmem_RVALID"/>
+            <PORTMAP LOGICAL="RREADY" PHYSICAL="m_axi_gmem_RREADY"/>
           </PORTMAPS>
         </BUSINTERFACE>
       </BUSINTERFACES>
       <MEMORYMAP>
-        <MEMRANGE ADDRESSBLOCK="HP0_DDR_LOWOCM" BASENAME="C_BASEADDR" BASEVALUE="0x00000000" HIGHNAME="C_HIGHADDR" HIGHVALUE="0x1FFFFFFF" INSTANCE="processing_system7_0" IS_DATA="TRUE" IS_INSTRUCTION="TRUE" MASTERBUSINTERFACE="m_axi_gmem0" MEMTYPE="MEMORY" SLAVEBUSINTERFACE="S_AXI_HP0"/>
-        <MEMRANGE ADDRESSBLOCK="HP0_DDR_LOWOCM" BASENAME="C_BASEADDR" BASEVALUE="0x00000000" HIGHNAME="C_HIGHADDR" HIGHVALUE="0x1FFFFFFF" INSTANCE="processing_system7_0" IS_DATA="TRUE" IS_INSTRUCTION="TRUE" MASTERBUSINTERFACE="m_axi_gmem1" MEMTYPE="MEMORY" SLAVEBUSINTERFACE="S_AXI_HP0"/>
+        <MEMRANGE ADDRESSBLOCK="HP0_DDR_LOWOCM" BASENAME="C_BASEADDR" BASEVALUE="0x00000000" HIGHNAME="C_HIGHADDR" HIGHVALUE="0x1FFFFFFF" INSTANCE="processing_system7_0" IS_DATA="TRUE" IS_INSTRUCTION="TRUE" MASTERBUSINTERFACE="m_axi_gmem" MEMTYPE="MEMORY" SLAVEBUSINTERFACE="S_AXI_HP0"/>
       </MEMORYMAP>
       <PERIPHERALS>
         <PERIPHERAL INSTANCE="processing_system7_0"/>
@@ -3674,7 +3615,7 @@
         <PARAMETER NAME="HAS_RESET" VALUE="1"/>
         <PARAMETER NAME="Component_Name" VALUE="cosine_overlay_smartconnect_0_0"/>
         <PARAMETER NAME="NUM_MI" VALUE="1"/>
-        <PARAMETER NAME="NUM_SI" VALUE="2"/>
+        <PARAMETER NAME="NUM_SI" VALUE="1"/>
         <PARAMETER NAME="NUM_CLKS" VALUE="1"/>
         <PARAMETER NAME="HAS_ARESETN" VALUE="1"/>
         <PARAMETER NAME="ADVANCED_PROPERTIES" VALUE="0"/>
@@ -3691,174 +3632,89 @@
             <CONNECTION INSTANCE="rst_ps7_0_100M" PORT="peripheral_aresetn"/>
           </CONNECTIONS>
         </PORT>
-        <PORT DIR="I" LEFT="0" NAME="S00_AXI_arid" RIGHT="0" SIGIS="undef" SIGNAME="cosine_skip_0_m_axi_gmem0_ARID">
+        <PORT DIR="I" LEFT="0" NAME="S00_AXI_arid" RIGHT="0" SIGIS="undef" SIGNAME="cosine_skip_0_m_axi_gmem_ARID">
           <CONNECTIONS>
-            <CONNECTION INSTANCE="cosine_skip_0" PORT="m_axi_gmem0_ARID"/>
+            <CONNECTION INSTANCE="cosine_skip_0" PORT="m_axi_gmem_ARID"/>
           </CONNECTIONS>
         </PORT>
-        <PORT DIR="I" LEFT="63" NAME="S00_AXI_araddr" RIGHT="0" SIGIS="undef" SIGNAME="cosine_skip_0_m_axi_gmem0_ARADDR">
+        <PORT DIR="I" LEFT="63" NAME="S00_AXI_araddr" RIGHT="0" SIGIS="undef" SIGNAME="cosine_skip_0_m_axi_gmem_ARADDR">
           <CONNECTIONS>
-            <CONNECTION INSTANCE="cosine_skip_0" PORT="m_axi_gmem0_ARADDR"/>
+            <CONNECTION INSTANCE="cosine_skip_0" PORT="m_axi_gmem_ARADDR"/>
           </CONNECTIONS>
         </PORT>
-        <PORT DIR="I" LEFT="7" NAME="S00_AXI_arlen" RIGHT="0" SIGIS="undef" SIGNAME="cosine_skip_0_m_axi_gmem0_ARLEN">
+        <PORT DIR="I" LEFT="7" NAME="S00_AXI_arlen" RIGHT="0" SIGIS="undef" SIGNAME="cosine_skip_0_m_axi_gmem_ARLEN">
           <CONNECTIONS>
-            <CONNECTION INSTANCE="cosine_skip_0" PORT="m_axi_gmem0_ARLEN"/>
+            <CONNECTION INSTANCE="cosine_skip_0" PORT="m_axi_gmem_ARLEN"/>
           </CONNECTIONS>
         </PORT>
-        <PORT DIR="I" LEFT="2" NAME="S00_AXI_arsize" RIGHT="0" SIGIS="undef" SIGNAME="cosine_skip_0_m_axi_gmem0_ARSIZE">
+        <PORT DIR="I" LEFT="2" NAME="S00_AXI_arsize" RIGHT="0" SIGIS="undef" SIGNAME="cosine_skip_0_m_axi_gmem_ARSIZE">
           <CONNECTIONS>
-            <CONNECTION INSTANCE="cosine_skip_0" PORT="m_axi_gmem0_ARSIZE"/>
+            <CONNECTION INSTANCE="cosine_skip_0" PORT="m_axi_gmem_ARSIZE"/>
           </CONNECTIONS>
         </PORT>
-        <PORT DIR="I" LEFT="1" NAME="S00_AXI_arburst" RIGHT="0" SIGIS="undef" SIGNAME="cosine_skip_0_m_axi_gmem0_ARBURST">
+        <PORT DIR="I" LEFT="1" NAME="S00_AXI_arburst" RIGHT="0" SIGIS="undef" SIGNAME="cosine_skip_0_m_axi_gmem_ARBURST">
           <CONNECTIONS>
-            <CONNECTION INSTANCE="cosine_skip_0" PORT="m_axi_gmem0_ARBURST"/>
+            <CONNECTION INSTANCE="cosine_skip_0" PORT="m_axi_gmem_ARBURST"/>
           </CONNECTIONS>
         </PORT>
-        <PORT DIR="I" LEFT="0" NAME="S00_AXI_arlock" RIGHT="0" SIGIS="undef" SIGNAME="cosine_skip_0_m_axi_gmem0_ARLOCK">
+        <PORT DIR="I" LEFT="0" NAME="S00_AXI_arlock" RIGHT="0" SIGIS="undef" SIGNAME="cosine_skip_0_m_axi_gmem_ARLOCK">
           <CONNECTIONS>
-            <CONNECTION INSTANCE="cosine_skip_0" PORT="m_axi_gmem0_ARLOCK"/>
+            <CONNECTION INSTANCE="cosine_skip_0" PORT="m_axi_gmem_ARLOCK"/>
           </CONNECTIONS>
         </PORT>
-        <PORT DIR="I" LEFT="3" NAME="S00_AXI_arcache" RIGHT="0" SIGIS="undef" SIGNAME="cosine_skip_0_m_axi_gmem0_ARCACHE">
+        <PORT DIR="I" LEFT="3" NAME="S00_AXI_arcache" RIGHT="0" SIGIS="undef" SIGNAME="cosine_skip_0_m_axi_gmem_ARCACHE">
           <CONNECTIONS>
-            <CONNECTION INSTANCE="cosine_skip_0" PORT="m_axi_gmem0_ARCACHE"/>
+            <CONNECTION INSTANCE="cosine_skip_0" PORT="m_axi_gmem_ARCACHE"/>
           </CONNECTIONS>
         </PORT>
-        <PORT DIR="I" LEFT="2" NAME="S00_AXI_arprot" RIGHT="0" SIGIS="undef" SIGNAME="cosine_skip_0_m_axi_gmem0_ARPROT">
+        <PORT DIR="I" LEFT="2" NAME="S00_AXI_arprot" RIGHT="0" SIGIS="undef" SIGNAME="cosine_skip_0_m_axi_gmem_ARPROT">
           <CONNECTIONS>
-            <CONNECTION INSTANCE="cosine_skip_0" PORT="m_axi_gmem0_ARPROT"/>
+            <CONNECTION INSTANCE="cosine_skip_0" PORT="m_axi_gmem_ARPROT"/>
           </CONNECTIONS>
         </PORT>
-        <PORT DIR="I" LEFT="3" NAME="S00_AXI_arqos" RIGHT="0" SIGIS="undef" SIGNAME="cosine_skip_0_m_axi_gmem0_ARQOS">
+        <PORT DIR="I" LEFT="3" NAME="S00_AXI_arqos" RIGHT="0" SIGIS="undef" SIGNAME="cosine_skip_0_m_axi_gmem_ARQOS">
           <CONNECTIONS>
-            <CONNECTION INSTANCE="cosine_skip_0" PORT="m_axi_gmem0_ARQOS"/>
+            <CONNECTION INSTANCE="cosine_skip_0" PORT="m_axi_gmem_ARQOS"/>
           </CONNECTIONS>
         </PORT>
-        <PORT DIR="I" NAME="S00_AXI_arvalid" SIGIS="undef" SIGNAME="cosine_skip_0_m_axi_gmem0_ARVALID">
+        <PORT DIR="I" NAME="S00_AXI_arvalid" SIGIS="undef" SIGNAME="cosine_skip_0_m_axi_gmem_ARVALID">
           <CONNECTIONS>
-            <CONNECTION INSTANCE="cosine_skip_0" PORT="m_axi_gmem0_ARVALID"/>
+            <CONNECTION INSTANCE="cosine_skip_0" PORT="m_axi_gmem_ARVALID"/>
           </CONNECTIONS>
         </PORT>
-        <PORT DIR="O" NAME="S00_AXI_arready" SIGIS="undef" SIGNAME="cosine_skip_0_m_axi_gmem0_ARREADY">
+        <PORT DIR="O" NAME="S00_AXI_arready" SIGIS="undef" SIGNAME="cosine_skip_0_m_axi_gmem_ARREADY">
           <CONNECTIONS>
-            <CONNECTION INSTANCE="cosine_skip_0" PORT="m_axi_gmem0_ARREADY"/>
+            <CONNECTION INSTANCE="cosine_skip_0" PORT="m_axi_gmem_ARREADY"/>
           </CONNECTIONS>
         </PORT>
-        <PORT DIR="O" LEFT="0" NAME="S00_AXI_rid" RIGHT="0" SIGIS="undef" SIGNAME="cosine_skip_0_m_axi_gmem0_RID">
+        <PORT DIR="O" LEFT="0" NAME="S00_AXI_rid" RIGHT="0" SIGIS="undef" SIGNAME="cosine_skip_0_m_axi_gmem_RID">
           <CONNECTIONS>
-            <CONNECTION INSTANCE="cosine_skip_0" PORT="m_axi_gmem0_RID"/>
+            <CONNECTION INSTANCE="cosine_skip_0" PORT="m_axi_gmem_RID"/>
           </CONNECTIONS>
         </PORT>
-        <PORT DIR="O" LEFT="31" NAME="S00_AXI_rdata" RIGHT="0" SIGIS="undef" SIGNAME="cosine_skip_0_m_axi_gmem0_RDATA">
+        <PORT DIR="O" LEFT="31" NAME="S00_AXI_rdata" RIGHT="0" SIGIS="undef" SIGNAME="cosine_skip_0_m_axi_gmem_RDATA">
           <CONNECTIONS>
-            <CONNECTION INSTANCE="cosine_skip_0" PORT="m_axi_gmem0_RDATA"/>
+            <CONNECTION INSTANCE="cosine_skip_0" PORT="m_axi_gmem_RDATA"/>
           </CONNECTIONS>
         </PORT>
-        <PORT DIR="O" LEFT="1" NAME="S00_AXI_rresp" RIGHT="0" SIGIS="undef" SIGNAME="cosine_skip_0_m_axi_gmem0_RRESP">
+        <PORT DIR="O" LEFT="1" NAME="S00_AXI_rresp" RIGHT="0" SIGIS="undef" SIGNAME="cosine_skip_0_m_axi_gmem_RRESP">
           <CONNECTIONS>
-            <CONNECTION INSTANCE="cosine_skip_0" PORT="m_axi_gmem0_RRESP"/>
+            <CONNECTION INSTANCE="cosine_skip_0" PORT="m_axi_gmem_RRESP"/>
           </CONNECTIONS>
         </PORT>
-        <PORT DIR="O" NAME="S00_AXI_rlast" SIGIS="undef" SIGNAME="cosine_skip_0_m_axi_gmem0_RLAST">
+        <PORT DIR="O" NAME="S00_AXI_rlast" SIGIS="undef" SIGNAME="cosine_skip_0_m_axi_gmem_RLAST">
           <CONNECTIONS>
-            <CONNECTION INSTANCE="cosine_skip_0" PORT="m_axi_gmem0_RLAST"/>
+            <CONNECTION INSTANCE="cosine_skip_0" PORT="m_axi_gmem_RLAST"/>
           </CONNECTIONS>
         </PORT>
-        <PORT DIR="O" NAME="S00_AXI_rvalid" SIGIS="undef" SIGNAME="cosine_skip_0_m_axi_gmem0_RVALID">
+        <PORT DIR="O" NAME="S00_AXI_rvalid" SIGIS="undef" SIGNAME="cosine_skip_0_m_axi_gmem_RVALID">
           <CONNECTIONS>
-            <CONNECTION INSTANCE="cosine_skip_0" PORT="m_axi_gmem0_RVALID"/>
+            <CONNECTION INSTANCE="cosine_skip_0" PORT="m_axi_gmem_RVALID"/>
           </CONNECTIONS>
         </PORT>
-        <PORT DIR="I" NAME="S00_AXI_rready" SIGIS="undef" SIGNAME="cosine_skip_0_m_axi_gmem0_RREADY">
+        <PORT DIR="I" NAME="S00_AXI_rready" SIGIS="undef" SIGNAME="cosine_skip_0_m_axi_gmem_RREADY">
           <CONNECTIONS>
-            <CONNECTION INSTANCE="cosine_skip_0" PORT="m_axi_gmem0_RREADY"/>
-          </CONNECTIONS>
-        </PORT>
-        <PORT DIR="I" LEFT="0" NAME="S01_AXI_arid" RIGHT="0" SIGIS="undef" SIGNAME="cosine_skip_0_m_axi_gmem1_ARID">
-          <CONNECTIONS>
-            <CONNECTION INSTANCE="cosine_skip_0" PORT="m_axi_gmem1_ARID"/>
-          </CONNECTIONS>
-        </PORT>
-        <PORT DIR="I" LEFT="63" NAME="S01_AXI_araddr" RIGHT="0" SIGIS="undef" SIGNAME="cosine_skip_0_m_axi_gmem1_ARADDR">
-          <CONNECTIONS>
-            <CONNECTION INSTANCE="cosine_skip_0" PORT="m_axi_gmem1_ARADDR"/>
-          </CONNECTIONS>
-        </PORT>
-        <PORT DIR="I" LEFT="7" NAME="S01_AXI_arlen" RIGHT="0" SIGIS="undef" SIGNAME="cosine_skip_0_m_axi_gmem1_ARLEN">
-          <CONNECTIONS>
-            <CONNECTION INSTANCE="cosine_skip_0" PORT="m_axi_gmem1_ARLEN"/>
-          </CONNECTIONS>
-        </PORT>
-        <PORT DIR="I" LEFT="2" NAME="S01_AXI_arsize" RIGHT="0" SIGIS="undef" SIGNAME="cosine_skip_0_m_axi_gmem1_ARSIZE">
-          <CONNECTIONS>
-            <CONNECTION INSTANCE="cosine_skip_0" PORT="m_axi_gmem1_ARSIZE"/>
-          </CONNECTIONS>
-        </PORT>
-        <PORT DIR="I" LEFT="1" NAME="S01_AXI_arburst" RIGHT="0" SIGIS="undef" SIGNAME="cosine_skip_0_m_axi_gmem1_ARBURST">
-          <CONNECTIONS>
-            <CONNECTION INSTANCE="cosine_skip_0" PORT="m_axi_gmem1_ARBURST"/>
-          </CONNECTIONS>
-        </PORT>
-        <PORT DIR="I" LEFT="0" NAME="S01_AXI_arlock" RIGHT="0" SIGIS="undef" SIGNAME="cosine_skip_0_m_axi_gmem1_ARLOCK">
-          <CONNECTIONS>
-            <CONNECTION INSTANCE="cosine_skip_0" PORT="m_axi_gmem1_ARLOCK"/>
-          </CONNECTIONS>
-        </PORT>
-        <PORT DIR="I" LEFT="3" NAME="S01_AXI_arcache" RIGHT="0" SIGIS="undef" SIGNAME="cosine_skip_0_m_axi_gmem1_ARCACHE">
-          <CONNECTIONS>
-            <CONNECTION INSTANCE="cosine_skip_0" PORT="m_axi_gmem1_ARCACHE"/>
-          </CONNECTIONS>
-        </PORT>
-        <PORT DIR="I" LEFT="2" NAME="S01_AXI_arprot" RIGHT="0" SIGIS="undef" SIGNAME="cosine_skip_0_m_axi_gmem1_ARPROT">
-          <CONNECTIONS>
-            <CONNECTION INSTANCE="cosine_skip_0" PORT="m_axi_gmem1_ARPROT"/>
-          </CONNECTIONS>
-        </PORT>
-        <PORT DIR="I" LEFT="3" NAME="S01_AXI_arqos" RIGHT="0" SIGIS="undef" SIGNAME="cosine_skip_0_m_axi_gmem1_ARQOS">
-          <CONNECTIONS>
-            <CONNECTION INSTANCE="cosine_skip_0" PORT="m_axi_gmem1_ARQOS"/>
-          </CONNECTIONS>
-        </PORT>
-        <PORT DIR="I" NAME="S01_AXI_arvalid" SIGIS="undef" SIGNAME="cosine_skip_0_m_axi_gmem1_ARVALID">
-          <CONNECTIONS>
-            <CONNECTION INSTANCE="cosine_skip_0" PORT="m_axi_gmem1_ARVALID"/>
-          </CONNECTIONS>
-        </PORT>
-        <PORT DIR="O" NAME="S01_AXI_arready" SIGIS="undef" SIGNAME="cosine_skip_0_m_axi_gmem1_ARREADY">
-          <CONNECTIONS>
-            <CONNECTION INSTANCE="cosine_skip_0" PORT="m_axi_gmem1_ARREADY"/>
-          </CONNECTIONS>
-        </PORT>
-        <PORT DIR="O" LEFT="0" NAME="S01_AXI_rid" RIGHT="0" SIGIS="undef" SIGNAME="cosine_skip_0_m_axi_gmem1_RID">
-          <CONNECTIONS>
-            <CONNECTION INSTANCE="cosine_skip_0" PORT="m_axi_gmem1_RID"/>
-          </CONNECTIONS>
-        </PORT>
-        <PORT DIR="O" LEFT="31" NAME="S01_AXI_rdata" RIGHT="0" SIGIS="undef" SIGNAME="cosine_skip_0_m_axi_gmem1_RDATA">
-          <CONNECTIONS>
-            <CONNECTION INSTANCE="cosine_skip_0" PORT="m_axi_gmem1_RDATA"/>
-          </CONNECTIONS>
-        </PORT>
-        <PORT DIR="O" LEFT="1" NAME="S01_AXI_rresp" RIGHT="0" SIGIS="undef" SIGNAME="cosine_skip_0_m_axi_gmem1_RRESP">
-          <CONNECTIONS>
-            <CONNECTION INSTANCE="cosine_skip_0" PORT="m_axi_gmem1_RRESP"/>
-          </CONNECTIONS>
-        </PORT>
-        <PORT DIR="O" NAME="S01_AXI_rlast" SIGIS="undef" SIGNAME="cosine_skip_0_m_axi_gmem1_RLAST">
-          <CONNECTIONS>
-            <CONNECTION INSTANCE="cosine_skip_0" PORT="m_axi_gmem1_RLAST"/>
-          </CONNECTIONS>
-        </PORT>
-        <PORT DIR="O" NAME="S01_AXI_rvalid" SIGIS="undef" SIGNAME="cosine_skip_0_m_axi_gmem1_RVALID">
-          <CONNECTIONS>
-            <CONNECTION INSTANCE="cosine_skip_0" PORT="m_axi_gmem1_RVALID"/>
-          </CONNECTIONS>
-        </PORT>
-        <PORT DIR="I" NAME="S01_AXI_rready" SIGIS="undef" SIGNAME="cosine_skip_0_m_axi_gmem1_RREADY">
-          <CONNECTIONS>
-            <CONNECTION INSTANCE="cosine_skip_0" PORT="m_axi_gmem1_RREADY"/>
+            <CONNECTION INSTANCE="cosine_skip_0" PORT="m_axi_gmem_RREADY"/>
           </CONNECTIONS>
         </PORT>
         <PORT DIR="O" LEFT="31" NAME="M00_AXI_araddr" RIGHT="0" SIGIS="undef" SIGNAME="processing_system7_0_S_AXI_HP0_ARADDR">
@@ -3938,7 +3794,7 @@
         </PORT>
       </PORTS>
       <BUSINTERFACES>
-        <BUSINTERFACE BUSNAME="cosine_skip_0_m_axi_gmem0" DATAWIDTH="32" NAME="S00_AXI" TYPE="SLAVE" VLNV="xilinx.com:interface:aximm:1.0">
+        <BUSINTERFACE BUSNAME="cosine_skip_0_m_axi_gmem" DATAWIDTH="32" NAME="S00_AXI" TYPE="SLAVE" VLNV="xilinx.com:interface:aximm:1.0">
           <PARAMETER NAME="DATA_WIDTH" VALUE="32"/>
           <PARAMETER NAME="PROTOCOL" VALUE="AXI4"/>
           <PARAMETER NAME="FREQ_HZ" VALUE="100000000"/>
@@ -3988,58 +3844,6 @@
             <PORTMAP LOGICAL="RLAST" PHYSICAL="S00_AXI_rlast"/>
             <PORTMAP LOGICAL="RVALID" PHYSICAL="S00_AXI_rvalid"/>
             <PORTMAP LOGICAL="RREADY" PHYSICAL="S00_AXI_rready"/>
-          </PORTMAPS>
-        </BUSINTERFACE>
-        <BUSINTERFACE BUSNAME="cosine_skip_0_m_axi_gmem1" DATAWIDTH="32" NAME="S01_AXI" TYPE="SLAVE" VLNV="xilinx.com:interface:aximm:1.0">
-          <PARAMETER NAME="DATA_WIDTH" VALUE="32"/>
-          <PARAMETER NAME="PROTOCOL" VALUE="AXI4"/>
-          <PARAMETER NAME="FREQ_HZ" VALUE="100000000"/>
-          <PARAMETER NAME="ID_WIDTH" VALUE="1"/>
-          <PARAMETER NAME="ADDR_WIDTH" VALUE="64"/>
-          <PARAMETER NAME="AWUSER_WIDTH" VALUE="0"/>
-          <PARAMETER NAME="ARUSER_WIDTH" VALUE="0"/>
-          <PARAMETER NAME="WUSER_WIDTH" VALUE="0"/>
-          <PARAMETER NAME="RUSER_WIDTH" VALUE="0"/>
-          <PARAMETER NAME="BUSER_WIDTH" VALUE="0"/>
-          <PARAMETER NAME="READ_WRITE_MODE" VALUE="READ_ONLY"/>
-          <PARAMETER NAME="HAS_BURST" VALUE="0"/>
-          <PARAMETER NAME="HAS_LOCK" VALUE="1"/>
-          <PARAMETER NAME="HAS_PROT" VALUE="1"/>
-          <PARAMETER NAME="HAS_CACHE" VALUE="1"/>
-          <PARAMETER NAME="HAS_QOS" VALUE="1"/>
-          <PARAMETER NAME="HAS_REGION" VALUE="0"/>
-          <PARAMETER NAME="HAS_WSTRB" VALUE="1"/>
-          <PARAMETER NAME="HAS_BRESP" VALUE="1"/>
-          <PARAMETER NAME="HAS_RRESP" VALUE="1"/>
-          <PARAMETER NAME="SUPPORTS_NARROW_BURST" VALUE="0"/>
-          <PARAMETER NAME="NUM_READ_OUTSTANDING" VALUE="8"/>
-          <PARAMETER NAME="NUM_WRITE_OUTSTANDING" VALUE="16"/>
-          <PARAMETER NAME="MAX_BURST_LENGTH" VALUE="256"/>
-          <PARAMETER NAME="PHASE" VALUE="0.0"/>
-          <PARAMETER NAME="CLK_DOMAIN" VALUE="cosine_overlay_processing_system7_0_0_FCLK_CLK0"/>
-          <PARAMETER NAME="NUM_READ_THREADS" VALUE="1"/>
-          <PARAMETER NAME="NUM_WRITE_THREADS" VALUE="1"/>
-          <PARAMETER NAME="RUSER_BITS_PER_BYTE" VALUE="0"/>
-          <PARAMETER NAME="WUSER_BITS_PER_BYTE" VALUE="0"/>
-          <PARAMETER NAME="INSERT_VIP" VALUE="0"/>
-          <PORTMAPS>
-            <PORTMAP LOGICAL="ARID" PHYSICAL="S01_AXI_arid"/>
-            <PORTMAP LOGICAL="ARADDR" PHYSICAL="S01_AXI_araddr"/>
-            <PORTMAP LOGICAL="ARLEN" PHYSICAL="S01_AXI_arlen"/>
-            <PORTMAP LOGICAL="ARSIZE" PHYSICAL="S01_AXI_arsize"/>
-            <PORTMAP LOGICAL="ARBURST" PHYSICAL="S01_AXI_arburst"/>
-            <PORTMAP LOGICAL="ARLOCK" PHYSICAL="S01_AXI_arlock"/>
-            <PORTMAP LOGICAL="ARCACHE" PHYSICAL="S01_AXI_arcache"/>
-            <PORTMAP LOGICAL="ARPROT" PHYSICAL="S01_AXI_arprot"/>
-            <PORTMAP LOGICAL="ARQOS" PHYSICAL="S01_AXI_arqos"/>
-            <PORTMAP LOGICAL="ARVALID" PHYSICAL="S01_AXI_arvalid"/>
-            <PORTMAP LOGICAL="ARREADY" PHYSICAL="S01_AXI_arready"/>
-            <PORTMAP LOGICAL="RID" PHYSICAL="S01_AXI_rid"/>
-            <PORTMAP LOGICAL="RDATA" PHYSICAL="S01_AXI_rdata"/>
-            <PORTMAP LOGICAL="RRESP" PHYSICAL="S01_AXI_rresp"/>
-            <PORTMAP LOGICAL="RLAST" PHYSICAL="S01_AXI_rlast"/>
-            <PORTMAP LOGICAL="RVALID" PHYSICAL="S01_AXI_rvalid"/>
-            <PORTMAP LOGICAL="RREADY" PHYSICAL="S01_AXI_rready"/>
           </PORTMAPS>
         </BUSINTERFACE>
         <BUSINTERFACE BUSNAME="smartconnect_0_M00_AXI" DATAWIDTH="64" NAME="M00_AXI" TYPE="MASTER" VLNV="xilinx.com:interface:aximm:1.0">

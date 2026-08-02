@@ -11,7 +11,7 @@ import numpy as np
 from pynq import Overlay, allocate
 
 
-MAGIC = b"CSK2"
+MAGIC = b"CSK3"
 CMD_RESET = 1
 CMD_PING = 2
 CMD_STEP = 3
@@ -25,13 +25,18 @@ STATUS_HARDWARE_ERROR = 3
 CTRL = 0x00
 AP_RETURN = 0x10
 X_LOW = 0x18
-Y_LOW = 0x24
-LENGTH = 0x30
-THRESHOLD_Q15 = 0x38
-DOT_OUT_LOW = 0x40
-NORM_X_LOW = 0x58
-NORM_Y_LOW = 0x70
-MAX_VECTOR_LEN = 32768
+LENGTH = 0x24
+STEP_INDEX = 0x2C
+THRESHOLD_Q15 = 0x34
+WARMUP_STEPS = 0x3C
+MAX_CONSECUTIVE_SKIPS = 0x44
+RESET_STATE = 0x4C
+DOT_OUT_LOW = 0x54
+NORM_X_LOW = 0x6C
+NORM_Y_LOW = 0x84
+THRESHOLD_PASSED_OUT = 0x9C
+SKIP_STREAK_OUT = 0xAC
+MAX_VECTOR_LEN = 4096
 IP_TIMEOUT_SECONDS = 1.0
 
 
@@ -55,57 +60,61 @@ class CosineHardware:
     def __init__(self, bitstream):
         self.overlay = Overlay(bitstream)
         self.ip = self.overlay.cosine_skip_0
-        self.incoming = allocate(shape=(MAX_VECTOR_LEN,), dtype=np.int16)
-        self.reference = allocate(shape=(MAX_VECTOR_LEN,), dtype=np.int16)
-        self.has_reference = False
-        self.reference_length = 0
-        self.consecutive_skips = 0
+        self.incoming = allocate(shape=(MAX_VECTOR_LEN,), dtype=np.int8)
+        self.reset()
 
     def close(self):
         self.incoming.freebuffer()
-        self.reference.freebuffer()
 
     def reset(self):
-        self.has_reference = False
-        self.reference_length = 0
-        self.consecutive_skips = 0
+        self._run_ip(
+            self.incoming,
+            length=0,
+            step_index=0,
+            threshold_q15=0,
+            warmup_steps=0,
+            max_skips=0,
+            reset_state=1,
+        )
 
     def receive_feature(self, connection, length):
-        target = memoryview(self.incoming).cast("B")[:length * 2]
+        target = memoryview(self.incoming).cast("B")[:length]
         recv_exact(connection, target)
         self.incoming.flush()
 
     def decide(self, step_index, length, threshold_q15, warmup_steps, max_skips):
         started = time.perf_counter_ns()
-        threshold_passed = False
-        similarity = math.nan
-        kernel_us = 0
-        if self.has_reference and self.reference_length == length:
-            kernel_started = time.perf_counter_ns()
-            threshold_result, dot, norm_x, norm_y = self._run_ip(
-                self.incoming, self.reference, length, threshold_q15
-            )
-            threshold_passed = bool(threshold_result)
-            if norm_x and norm_y:
-                similarity = dot / math.sqrt(norm_x * norm_y)
-                similarity = max(-1.0, min(1.0, similarity))
-            kernel_us = (time.perf_counter_ns() - kernel_started) // 1000
-
-        should_skip = (
-            self.has_reference
-            and threshold_passed
-            and step_index >= warmup_steps
-            and self.consecutive_skips < max_skips
+        kernel_started = time.perf_counter_ns()
+        (
+            should_skip,
+            threshold_passed,
+            skip_streak,
+            dot,
+            norm_x,
+            norm_y,
+        ) = self._run_ip(
+            self.incoming,
+            length,
+            step_index,
+            threshold_q15,
+            warmup_steps,
+            max_skips,
+            reset_state=0,
         )
-        if should_skip:
-            self.consecutive_skips += 1
-        else:
-            self.incoming, self.reference = self.reference, self.incoming
-            self.has_reference = True
-            self.reference_length = length
-            self.consecutive_skips = 0
+        kernel_us = (time.perf_counter_ns() - kernel_started) // 1000
+        similarity = math.nan
+        if norm_x and norm_y:
+            similarity = dot / math.sqrt(norm_x * norm_y)
+            similarity = max(-1.0, min(1.0, similarity))
         server_us = (time.perf_counter_ns() - started) // 1000
-        return should_skip, threshold_passed, similarity, kernel_us, server_us
+        return (
+            bool(should_skip),
+            bool(threshold_passed),
+            int(skip_streak),
+            similarity,
+            kernel_us,
+            server_us,
+        )
 
     def _write_u64(self, offset_low, value):
         value = int(value)
@@ -119,11 +128,15 @@ class CosineHardware:
         value = self._read_u64(offset_low)
         return value - (1 << 64) if value & (1 << 63) else value
 
-    def _run_ip(self, x_buffer, y_buffer, length, threshold_q15):
+    def _run_ip(self, x_buffer, length, step_index, threshold_q15,
+                warmup_steps, max_skips, reset_state):
         self._write_u64(X_LOW, x_buffer.physical_address)
-        self._write_u64(Y_LOW, y_buffer.physical_address)
         self.ip.write(LENGTH, length)
+        self.ip.write(STEP_INDEX, step_index)
         self.ip.write(THRESHOLD_Q15, threshold_q15)
+        self.ip.write(WARMUP_STEPS, warmup_steps)
+        self.ip.write(MAX_CONSECUTIVE_SKIPS, max_skips)
+        self.ip.write(RESET_STATE, reset_state)
         self.ip.write(CTRL, 0x01)
         deadline = time.monotonic() + IP_TIMEOUT_SECONDS
         while (self.ip.read(CTRL) & 0x2) == 0:
@@ -131,21 +144,24 @@ class CosineHardware:
                 raise HardwareTimeout("cosine_skip IP did not finish within 1 second")
         return (
             self.ip.read(AP_RETURN),
+            self.ip.read(THRESHOLD_PASSED_OUT),
+            self.ip.read(SKIP_STREAK_OUT),
             self._read_i64(DOT_OUT_LOW),
             self._read_u64(NORM_X_LOW),
             self._read_u64(NORM_Y_LOW),
         )
 
 
-def send_response(connection, status, decision=0, threshold_passed=0, step=0,
-                  kernel_us=0, server_us=0, similarity=math.nan):
+def send_response(connection, status, decision=0, threshold_passed=0,
+                  skip_streak=0, step=0, kernel_us=0, server_us=0,
+                  similarity=math.nan):
     connection.sendall(
         RESPONSE.pack(
             MAGIC,
             status,
             int(bool(decision)),
             int(bool(threshold_passed)),
-            0,
+            min(255, max(0, int(skip_streak))),
             int(step),
             int(kernel_us),
             int(server_us),
@@ -182,19 +198,19 @@ def serve_client(connection, address, hardware):
 
         hardware.receive_feature(connection, length)
         try:
-            decision, threshold_passed, similarity, kernel_us, server_us = (
+            decision, threshold_passed, skip_streak, similarity, kernel_us, server_us = (
                 hardware.decide(step, length, threshold, warmup, max_skips)
             )
         except HardwareTimeout as exc:
             print("FPGA timeout:", exc, flush=True)
             send_response(connection, STATUS_HARDWARE_ERROR, step=step)
-            hardware.reset()
-            return
+            raise
         send_response(
             connection,
             STATUS_OK,
             decision,
             threshold_passed,
+            skip_streak,
             step,
             kernel_us,
             server_us,

@@ -8,9 +8,10 @@ import time
 from dataclasses import dataclass
 
 import numpy as np
+import torch.nn.functional as F
 
 
-MAGIC = b"CSK2"
+MAGIC = b"CSK3"
 CMD_RESET = 1
 CMD_PING = 2
 CMD_STEP = 3
@@ -18,6 +19,7 @@ CMD_STEP = 3
 REQUEST = struct.Struct("!4sB3xIIIII")
 RESPONSE = struct.Struct("!4sBBBBIIId")
 STATUS_OK = 0
+FEATURE_DOWNSAMPLE_FACTOR = 2
 
 
 @dataclass(frozen=True)
@@ -29,23 +31,51 @@ class PynqDecision:
     server_ms: float
     round_trip_ms: float
     similarity: float
+    skip_streak: int
     prepare_ms: float = 0.0
     feature_bytes: int = 0
 
 
-def quantize_feature(feature) -> np.ndarray:
-    """Convert one SD latent feature to symmetric int16 values."""
-    values = feature.detach().float().cpu().numpy()
+def compress_feature(
+    feature, downsample_factor: int = FEATURE_DOWNSAMPLE_FACTOR
+) -> np.ndarray:
+    """Reduce one CHW latent feature and quantize it to symmetric int8."""
+    if feature.ndim == 4 and feature.shape[0] in (1, 2):
+        feature = feature[0]
+    if feature.ndim != 3:
+        raise ValueError(f"Expected a CHW latent feature, got shape {feature.shape}")
+    if downsample_factor <= 0:
+        raise ValueError("downsample_factor must be positive")
+    if (
+        feature.shape[-2] % downsample_factor != 0
+        or feature.shape[-1] % downsample_factor != 0
+    ):
+        raise ValueError(
+            f"Feature size {feature.shape[-2:]} is not divisible by "
+            f"downsample factor {downsample_factor}"
+        )
+
+    reduced = F.avg_pool2d(
+        feature.detach().float().unsqueeze(0),
+        kernel_size=downsample_factor,
+        stride=downsample_factor,
+    ).squeeze(0)
+    values = reduced.cpu().numpy()
     values = np.ascontiguousarray(values.reshape(-1), dtype=np.float32)
     max_abs = float(np.max(np.abs(values))) if values.size else 0.0
     if not np.isfinite(max_abs):
         raise ValueError("Latent feature contains NaN or infinity")
     if max_abs == 0.0:
-        return np.zeros(values.shape, dtype="<i2")
-    scale = 32767.0 / max_abs
+        return np.zeros(values.shape, dtype=np.int8)
+    scale = 127.0 / max_abs
     return np.ascontiguousarray(
-        np.clip(np.rint(values * scale), -32768, 32767), dtype="<i2"
+        np.clip(np.rint(values * scale), -127, 127), dtype=np.int8
     )
+
+
+def quantize_feature(feature) -> np.ndarray:
+    """Backward-compatible alias for the CSK3 compression path."""
+    return compress_feature(feature)
 
 
 class PynqCosineClient:
@@ -99,12 +129,8 @@ class PynqCosineClient:
         warmup_steps: int,
         max_consecutive_skips: int,
     ) -> PynqDecision:
-        # Classifier-free guidance duplicates the same latent in batch entries 0 and 1.
-        # Sending one entry preserves cosine similarity and halves network traffic.
-        if feature.ndim == 4 and feature.shape[0] == 2:
-            feature = feature[0]
         prepare_started = time.perf_counter()
-        quantized = quantize_feature(feature)
+        quantized = compress_feature(feature)
         prepare_ms = (time.perf_counter() - prepare_started) * 1000.0
         response = self._request(
             CMD_STEP,
@@ -126,6 +152,7 @@ class PynqCosineClient:
             server_ms=response.server_ms,
             round_trip_ms=response.round_trip_ms,
             similarity=response.similarity,
+            skip_streak=response.skip_streak,
             prepare_ms=prepare_ms,
             feature_bytes=quantized.nbytes,
         )
@@ -168,7 +195,7 @@ class PynqCosineClient:
             status,
             decision,
             threshold_passed,
-            _,
+            skip_streak,
             reply_step,
             kernel_us,
             server_us,
@@ -190,6 +217,7 @@ class PynqCosineClient:
             server_ms=server_us / 1000.0,
             round_trip_ms=round_trip_ms,
             similarity=similarity,
+            skip_streak=skip_streak,
         )
 
     def _recv_exact(self, size: int) -> bytes:

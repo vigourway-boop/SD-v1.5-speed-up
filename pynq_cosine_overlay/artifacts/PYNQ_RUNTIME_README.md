@@ -1,11 +1,13 @@
 # PYNQ cosine runtime
 
 The PYNQ-Z2 runs `pynq_cosine_server.py` as a persistent TCP service. The PC
-sends one `1 x 4 x 64 x 64` int16 feature vector for every diffusion timestep.
-The board keeps the last feature whose UNet was executed, calls the FPGA IP,
-applies warmup and consecutive-skip limits, and sends the measured cosine
-similarity plus one skip decision back. The `CSK2` protocol deliberately rejects
-an old server/bitstream combination.
+downsamples each CFG-reduced latent to `1 x 4 x 32 x 32`, quantizes it to int8,
+and sends a 4096-byte vector for every diffusion timestep. The FPGA keeps the
+reference vector in BRAM and applies cosine threshold, warmup, consecutive-skip
+limit and reference-update logic. The ARM returns the FPGA decision, skip streak
+and measured cosine similarity. The `CSK3` magic deliberately rejects an old
+client/server protocol combination. Deploy the bitstream, HWH and server from
+the same artifact set.
 
 ## One-time board deployment
 
@@ -60,6 +62,7 @@ never silently replaces the FPGA decision with PyTorch.
 
 In `step_metrics.csv`, `prepare_ms` is PC quantization/copy time,
 `round_trip_ms` includes network transfer and the board response, and
-`kernel_ms` is FPGA execution time. `pynq_total_ms` is
+`kernel_ms` is the board-side FPGA invocation time, including ARM MMIO setup,
+polling and result reads. The HLS core latency is smaller. `pynq_total_ms` is
 `prepare_ms + round_trip_ms`. The first similarity is `NaN` because no previous
-UNet reference exists yet.
+feature reference exists yet.

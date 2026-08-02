@@ -49,9 +49,8 @@ apply_bd_automation -rule xilinx.com:bd_rule:axi4 \
     [get_bd_intf_pins cosine_skip_0/s_axi_control]
 
 create_bd_cell -type ip -vlnv xilinx.com:ip:smartconnect:1.0 smartconnect_0
-set_property -dict [list CONFIG.NUM_SI {2} CONFIG.NUM_MI {1}] [get_bd_cells smartconnect_0]
-connect_bd_intf_net [get_bd_intf_pins cosine_skip_0/m_axi_gmem0] [get_bd_intf_pins smartconnect_0/S00_AXI]
-connect_bd_intf_net [get_bd_intf_pins cosine_skip_0/m_axi_gmem1] [get_bd_intf_pins smartconnect_0/S01_AXI]
+set_property -dict [list CONFIG.NUM_SI {1} CONFIG.NUM_MI {1}] [get_bd_cells smartconnect_0]
+connect_bd_intf_net [get_bd_intf_pins cosine_skip_0/m_axi_gmem] [get_bd_intf_pins smartconnect_0/S00_AXI]
 connect_bd_intf_net [get_bd_intf_pins smartconnect_0/M00_AXI] [get_bd_intf_pins processing_system7_0/S_AXI_HP0]
 
 foreach clk_pin [get_bd_pins -of_objects [get_bd_cells smartconnect_0] -filter {TYPE == clk}] {

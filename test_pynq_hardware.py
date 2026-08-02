@@ -21,12 +21,16 @@ def main():
 
     with PynqCosineClient(args.host, args.port) as client:
         client.reset()
-        establish = client.decide(first, 0, 0.999, 0, 3)
-        identical = client.decide(first, 1, 0.999, 0, 3)
-        changed = client.decide(different, 2, 0.999, 0, 3)
+        establish = client.decide(first, 0, 0.999, 0, 2)
+        identical = client.decide(first, 1, 0.999, 0, 2)
+        second_skip = client.decide(first, 2, 0.999, 0, 2)
+        forced_unet = client.decide(first, 3, 0.999, 0, 2)
+        changed = client.decide(different, 4, 0.999, 0, 2)
 
     print("establish reference:", establish)
     print("identical feature:", identical)
+    print("second allowed skip:", second_skip)
+    print("forced UNet after max skips:", forced_unet)
     print("different feature:", changed)
     if establish.should_skip:
         raise SystemExit("First feature must establish a reference")
@@ -36,6 +40,14 @@ def main():
         raise SystemExit("Identical feature should be skipped")
     if abs(identical.similarity - 1.0) > 1e-9:
         raise SystemExit(f"Identical feature similarity is {identical.similarity}, not 1")
+    if identical.skip_streak != 1 or not second_skip.should_skip:
+        raise SystemExit("FPGA consecutive skip counter did not reach two")
+    if second_skip.skip_streak != 2:
+        raise SystemExit("FPGA second skip streak is incorrect")
+    if forced_unet.should_skip or not forced_unet.threshold_passed:
+        raise SystemExit("FPGA did not enforce max_consecutive_skips")
+    if forced_unet.skip_streak != 0:
+        raise SystemExit("FPGA skip streak did not reset after forced UNet")
     if changed.should_skip:
         raise SystemExit("Different feature must execute UNet")
     if changed.similarity >= 0.999:
@@ -48,7 +60,7 @@ def main():
     expected_similarity = dot / math.sqrt(norm_first * norm_different)
     if abs(changed.similarity - expected_similarity) > 1e-12:
         raise SystemExit(
-            "PYNQ similarity differs from the PC int16 reference: "
+            "PYNQ similarity differs from the PC compressed int8 reference: "
             f"{changed.similarity} != {expected_similarity}"
         )
     print("Real PYNQ hardware protocol test passed")

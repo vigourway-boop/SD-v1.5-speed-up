@@ -1,7 +1,8 @@
 Build status
 ============
 
-Completed successfully on Vivado/Vitis HLS 2022.2 for PYNQ-Z2 Zynq-7020 part xc7z020clg400-1.
+CSK3 completed successfully with Vivado/Vitis HLS 2022.2 for the PYNQ-Z2
+Zynq-7020 part xc7z020clg400-1.
 
 Generated deliverables:
 - artifacts/cosine_overlay.bit
@@ -16,20 +17,67 @@ Source and scripts:
 - hls/run_hls.tcl
 - vivado/create_overlay.tcl
 
-Validated:
-- HLS C simulation passed.
-- HLS C synthesis passed.
-- HLS IP export passed.
-- Vivado block design validation passed after connecting processing_system7_0/S_AXI_HP0_ACLK to FCLK_CLK0.
-- Vivado synthesis, implementation, and bitstream generation passed.
-- Final routed timing passed at 100 MHz (WNS +0.244 ns, TNS 0.000 ns).
-- Final HWH output registers: dot 0x40/0x44, norm_x 0x58/0x5C, norm_y 0x70/0x74.
-- CSK2 was deployed to 192.168.2.99 and real FPGA protocol tests passed.
-- Identical-vector similarity was 1.0; a random-vector test was about 0.000646.
-- End-to-end baseline/dynamic generation, 100-row CSV and all four quality metrics passed.
+CSK3 data path:
+- The PC removes the duplicate CFG batch.
+- The PC applies 2x2 average pooling to 4 x 64 x 64 latent features.
+- Each 4 x 32 x 32 feature is symmetrically quantized to 4096 int8 values.
+- The per-step payload is 4096 bytes, 8x smaller than CSK2's 32768 bytes.
+- The FPGA stores the reference feature in BRAM and controls all skip decisions.
+
+Validated build results:
+- HLS C simulation passed with 0 errors.
+- HLS C synthesis and IP export passed.
+- HLS maximum latency: 8229 cycles, or 82.29 us at 100 MHz.
+- HLS estimated clock: 7.300 ns, or 136.99 MHz.
+- HLS estimate: 2 BRAM, 35 DSP, 9% LUT.
+- Vivado block design validation, synthesis, implementation and bitstream passed.
+- Final routed timing passed at 100 MHz: WNS +0.337 ns, TNS 0.000 ns.
+- Implemented utilization: LUT 6.65%, FF 3.71%, BRAM 1.07%, DSP 30.45%.
+
+Final AXI-Lite register map:
+- CTRL                       0x00
+- AP_RETURN                  0x10
+- X                          0x18/0x1C
+- LENGTH                     0x24
+- STEP_INDEX                 0x2C
+- THRESHOLD_Q15              0x34
+- WARMUP_STEPS               0x3C
+- MAX_CONSECUTIVE_SKIPS      0x44
+- RESET_STATE                0x4C
+- DOT_OUT                    0x54/0x58
+- NORM_X_OUT                 0x6C/0x70
+- NORM_Y_OUT                 0x84/0x88
+- THRESHOLD_PASSED_OUT       0x9C
+- SKIP_STREAK_OUT            0xAC
+
+Validated hardware behavior on 192.168.2.99:
+- First feature establishes the reference and cannot skip.
+- Identical features report similarity 1.0.
+- Two consecutive skips are allowed in the hardware test.
+- The next identical feature forces UNet and resets the skip streak.
+- A different feature does not pass the cosine threshold.
+- FPGA similarity agrees with the PC compressed-int8 reference calculation.
+- Measured board-side FPGA invocation time, including ARM MMIO, was about
+  0.53-0.59 ms per request.
+- Measured network round trip was about 1.44-1.53 ms per request.
+
+Validated end-to-end experiment:
+- Seed: 3669225787
+- Baseline: 11.10 s
+- CSK3 dynamic: 4.70 s
+- Speedup: 2.36x
+- UNet executed/skipped: 39/61
+- Total feature traffic: 400 KiB
+- PSNR: 30.2462 dB
+- SSIM: 0.921491
+- LPIPS: 0.048996
+- CLIP Score baseline/dynamic: 30.5024/30.3823
 
 Notes:
-- The IP computes a fixed-point cosine threshold decision and returns dot, norm_x and norm_y.
-- The PYNQ ARM computes the reported cosine value from those FPGA outputs.
-- The PC sends one CFG-reduced latent_model_input of length 4 * 64 * 64 = 16384.
-- PYNQ should load cosine_overlay.bit and cosine_overlay.hwh with the same base filename in the same folder.
+- The FPGA computes dot, norms, cosine-threshold decision, warmup gating,
+  consecutive-skip limiting, skip streak and reference updates.
+- The PYNQ ARM only handles transport, IP control and conversion of FPGA
+  statistics into the reported floating-point cosine value.
+- The CSK3 protocol intentionally rejects CSK2 clients and servers.
+- Deploy the bitstream, HWH and server from the same artifact set.
+- The bit and HWH files must use the same base filename in one directory.

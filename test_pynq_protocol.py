@@ -12,6 +12,7 @@ from pynq_cosine_client import (
     REQUEST,
     RESPONSE,
     PynqCosineClient,
+    compress_feature,
     quantize_feature,
 )
 
@@ -48,20 +49,22 @@ class FakePynqServer(threading.Thread):
                     if magic != MAGIC:
                         raise AssertionError("wrong protocol magic")
                     if command == CMD_STEP:
-                        payload = recv_exact(connection, length * 2)
+                        payload = recv_exact(connection, length)
                         self.received_lengths.append((length, len(payload)))
                         decision = 1
                         threshold_passed = 1
+                        skip_streak = 2
                     else:
                         decision = 0
                         threshold_passed = 0
+                        skip_streak = 0
                     connection.sendall(
                         RESPONSE.pack(
                             MAGIC,
                             0,
                             decision,
                             threshold_passed,
-                            0,
+                            skip_streak,
                             step,
                             321,
                             400,
@@ -94,19 +97,25 @@ class PynqProtocolTest(unittest.TestCase):
         server.join(timeout=2)
 
         self.assertIsNone(server.error)
-        self.assertEqual(server.received_lengths, [(16384, 32768)])
+        self.assertEqual(server.received_lengths, [(4096, 4096)])
         self.assertTrue(result.should_skip)
         self.assertTrue(result.threshold_passed)
         self.assertEqual(result.step_index, 7)
-        self.assertEqual(client.total_bytes_sent, 32768)
+        self.assertEqual(client.total_bytes_sent, 4096)
         self.assertAlmostEqual(result.similarity, 0.9995)
         self.assertGreaterEqual(result.prepare_ms, 0.0)
-        self.assertEqual(result.feature_bytes, 32768)
+        self.assertEqual(result.feature_bytes, 4096)
+        self.assertEqual(result.skip_streak, 2)
 
     def test_zero_feature_quantization(self):
         result = quantize_feature(torch.zeros(4, 64, 64))
-        self.assertEqual(result.dtype.str, "<i2")
+        self.assertEqual(result.dtype, "int8")
+        self.assertEqual(result.size, 4096)
         self.assertEqual(int(result.max()), 0)
+
+    def test_invalid_downsample_shape_is_rejected(self):
+        with self.assertRaises(ValueError):
+            compress_feature(torch.zeros(4, 63, 64))
 
 
 if __name__ == "__main__":

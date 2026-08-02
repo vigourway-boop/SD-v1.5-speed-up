@@ -10,7 +10,7 @@ from pathlib import Path
 import torch
 
 from config import *
-from pynq_cosine_client import PynqCosineClient
+from pynq_cosine_client import FEATURE_DOWNSAMPLE_FACTOR, PynqCosineClient
 
 
 pipe = None
@@ -83,7 +83,6 @@ def run_with_dynamic_steps(filename, pynq_client):
     prev_noise_pred = None
     executed_steps = 0
     skipped_steps = 0
-    skip_streak = 0
     step_rows = []
     for step_index, timestep in enumerate(pipe.scheduler.timesteps):
         step_started = time.perf_counter()
@@ -100,6 +99,7 @@ def run_with_dynamic_steps(filename, pynq_client):
             max_consecutive_skips=MAX_CONSECUTIVE_SKIPS,
         )
         should_skip = decision.should_skip
+        skip_streak = decision.skip_streak
         action = "SKIP" if should_skip else "UNET"
         similarity_text = (
             "n/a" if math.isnan(decision.similarity) else f"{decision.similarity:.6f}"
@@ -117,7 +117,6 @@ def run_with_dynamic_steps(filename, pynq_client):
                 raise RuntimeError("PYNQ requested a skip before any UNet result exists")
             noise_pred = prev_noise_pred
             skipped_steps += 1
-            skip_streak += 1
         else:
             sync()
             unet_started = time.perf_counter()
@@ -131,7 +130,6 @@ def run_with_dynamic_steps(filename, pynq_client):
             unet_ms = (time.perf_counter() - unet_started) * 1000.0
             prev_noise_pred = noise_pred
             executed_steps += 1
-            skip_streak = 0
 
         noise_pred_uncond, noise_pred_text = noise_pred.chunk(2)
         guided_noise_pred = noise_pred_uncond + GUIDANCE * (
@@ -293,7 +291,7 @@ def main():
             f"Details: {exc}"
         ) from exc
 
-    print("PYNQ connection and CSK2 protocol check passed.")
+    print("PYNQ connection and CSK3 protocol check passed.")
     client.close()
 
     baseline_elapsed = None
@@ -344,6 +342,9 @@ def main():
             "dynamic_seconds": dynamic_elapsed,
             "speedup": speedup,
             "pynq_feature_bytes": client.total_bytes_sent,
+            "pynq_feature_dtype": "int8",
+            "pynq_downsample_factor": FEATURE_DOWNSAMPLE_FACTOR,
+            "skip_controller_location": "FPGA",
             "average_round_trip_ms": (
                 client.total_round_trip_ms / client.step_calls
                 if client.step_calls
