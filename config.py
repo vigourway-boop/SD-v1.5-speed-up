@@ -47,6 +47,7 @@ LATE_THRESHOLD_MARGIN = 0.00035
 LATE_THRESHOLD_MIN = 0.99945
 LATE_THRESHOLD_MAX = 0.99965
 THRESHOLD_EMA_ALPHA = 0.20
+DISTANCE_THRESHOLD = float(os.environ.get("SD_DISTANCE_THRESHOLD", "2.0"))
 
 # PYNQ-Z2 network service. Environment variables can override these defaults.
 PYNQ_HOST = os.environ.get("PYNQ_HOST", "192.168.2.99")
@@ -58,9 +59,10 @@ def sync():
         torch.cuda.synchronize()
 
 
-def make_generator():
+def make_generator(seed=None):
     """Create a fresh generator so both strategies start from the same noise."""
-    return torch.Generator(device=DEVICE).manual_seed(RUN_SEED)
+    effective_seed = RUN_SEED if seed is None else seed
+    return torch.Generator(device=DEVICE).manual_seed(effective_seed)
 
 
 def create_pipe(use_dpm_solver: bool = True):

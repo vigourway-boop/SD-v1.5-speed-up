@@ -1,22 +1,22 @@
 # SD-v1.5 Speed-up with PYNQ-Z2
 
-基于时间步特征余弦相似度的 Stable Diffusion 1.5 动态跳步加速项目。
+基于时间步特征余弦相似度和归一化特征距离的 Stable Diffusion 1.5 动态跳步加速项目。
 
-Stable Diffusion 的 CLIP、UNet、Scheduler 和 VAE 在 PC GPU 上运行。PC 每个扩散时间步先去除重复 CFG batch，执行 `2x2` 平均池化，再将 latent 特征量化为 int8 并通过以太网发送给 PYNQ-Z2。FPGA 使用片上 BRAM 保存参考特征，并完成点积、范数、余弦阈值、warmup、连续跳步限制和参考更新。PYNQ ARM 只负责通信以及将 FPGA 统计量换算为具体余弦值。
+Stable Diffusion 的 CLIP、UNet、Scheduler 和 VAE 在 PC GPU 上运行。PC 每个扩散时间步先去除重复 CFG batch，执行 `2x2` 平均池化，再将 latent 特征量化为 int8 并通过以太网发送给 PYNQ-Z2。PYNQ ARM 维护三阶段动态阈值、相邻步余弦 EMA 和参数状态。FPGA 使用片上 BRAM 保存参考特征，并完成点积、范数、余弦阈值、归一化距离阈值、warmup、连续跳步限制和参考更新。
 
 ```mermaid
 flowchart LR
     A["PC GPU: SD 1.5"] --> B["2x downsample + int8 feature"]
     B -->|"TCP Ethernet"| C["PYNQ ARM"]
-    C --> D["FPGA cosine IP"]
+    C -->|"dynamic threshold"| D["FPGA cosine + distance IP"]
     D --> C
-    C -->|"similarity + skip decision"| A
+    C -->|"statistics + skip decision"| A
     A --> E["Scheduler + VAE image"]
 ```
 
 ## 稳定版本
 
-原始 CSK2/int16 稳定版本永久保存在 Git 标签 [`v1.0-csk2`](https://github.com/vigourway-boop/SD-v1.5-speed-up/tree/v1.0-csk2)。CSK3/int8 的开发记录保存在 `feature/int8-skip-controller` 分支，旧版本不会被覆盖。
+原始 CSK2/int16 稳定版本永久保存在 Git 标签 [`v1.0-csk2`](https://github.com/vigourway-boop/SD-v1.5-speed-up/tree/v1.0-csk2)。CSK3/int8 和 PC 端动态阈值的开发记录保存在 `feature/int8-skip-controller` 分支。CSK4 板端动态控制器与双重判定在 `feature/pynq-board-controller-distance` 分支开发，旧版本不会被覆盖。
 
 ## v1.0-csk2 已验证结果
 
@@ -80,18 +80,38 @@ CSK3 将每步传输量从 CSK2 的 32768 B 降至 4096 B，并把 warmup、余�
 
 5 组动态实验的 PSNR、SSIM 和 LPIPS 均同时改善，且都没有发生第 3 次连续跳步。动态阈值牺牲一部分速度，换取更稳定的生成轨迹。完整定参和逐种子结果见 [`DYNAMIC_THRESHOLD_EVALUATION.md`](DYNAMIC_THRESHOLD_EVALUATION.md)，代表性实验位于 [`examples/dynamic_threshold_run`](examples/dynamic_threshold_run)。
 
+## CSK4 板端控制与双重判定
+
+CSK4 只在启动时由 PC 发送一次完整控制参数。之后每步 PC 只发送 `step_index` 和 4096 字节的 int8 特征：
+
+- PYNQ ARM：选择 warmup/middle/late 阶段，维护相邻步余弦 EMA，计算并钳位动态余弦阈值。
+- FPGA：计算点积和两个范数，通过无除法的定点比较完成余弦与归一化距离判断。
+- FPGA：仅当 `cosine_passed && distance_passed`，并满足 warmup 和最大连续跳步限制时返回跳步。
+
+归一化距离定义为：
+
+```text
+distance = (norm_x + norm_y - 2 * dot) / (norm_x + norm_y)
+```
+
+FPGA 使用 Q20 阈值交叉相乘，不执行除法。默认 `SD_DISTANCE_THRESHOLD=2.0` 是采集和兼容阶段的宽松阈值，不影响原余弦控制结果；它不代表质量安全阈值。
+
+修复命令行 seed 传递后，项目完成了 3 个固定 seed x 3 个距离阈值的有效校准。`0.00035` 在候选中最好，平均加速 `1.729x`、平均 PSNR `33.192 dB`，但最差 seed 的 PSNR 只有 `23.747 dB`。进一步收紧到 `0.00015`、只跳 21 步时，该 seed 的 PSNR 仍只有 `24.455 dB`。因此当前不提升任何候选为默认值，下一步需要修改跳步策略本身，而不是继续微调单一全局距离阈值。完整数据见 [`DISTANCE_THRESHOLD_EVALUATION.md`](DISTANCE_THRESHOLD_EVALUATION.md)。
+
 ## 目录
 
 ```text
 combined_speed_test.py       一键 baseline + PYNQ 动态生成与评估
 config.py                    模型、提示词、随机种子和跳步参数
 dynamic_threshold.py         三阶段动态阈值和在线 EMA 控制器
-pynq_cosine_client.py        PC 端 CSK3 二进制协议客户端
+pynq_protocol.py             PC 与 PYNQ 共用的 CSK4 二进制协议
+pynq_cosine_client.py        PC 端特征压缩和 CSK4 客户端
 quality_metrics.py           PSNR、SSIM、LPIPS、CLIP Score
 run_pynq_speedup.cmd         Windows 一键运行入口
 deploy_pynq_server.cmd       部署 bit/hwh 和板端服务
 test_pynq_protocol.py        本地协议测试
 test_dynamic_threshold.py    动态阈值阶段、EMA 和边界测试
+test_config.py               显式随机种子的复现与差异测试
 test_pynq_hardware.py        真实 PYNQ/FPGA 测试
 pynq_cosine_overlay/
   hls/src/                   HLS C++ IP 源码和测试台
@@ -128,7 +148,7 @@ pip install -r requirements.txt
 deploy_pynq_server.cmd 192.168.2.99 xilinx
 ```
 
-该命令会上传 `cosine_overlay.bit/.hwh` 和板端 Python 服务，安装并启动 `pynq-cosine.service`。SSH 和 sudo 可能要求输入 PYNQ 密码。不要将密码、Token 或 SSH 私钥提交到仓库。
+该命令会上传 `cosine_overlay.bit/.hwh`、板端服务、动态阈值控制器和共享协议，安装并启动 `pynq-cosine.service`。SSH 和 sudo 可能要求输入 PYNQ 密码。不要将密码、Token 或 SSH 私钥提交到仓库。
 
 ## 一键生成与评估
 
@@ -147,23 +167,32 @@ experiments/YYYYMMDD_HHMMSS_seed_<seed>/
   quality_metrics.json
 ```
 
-`step_metrics.csv` 每个扩散时间步一行，包含余弦相似度、请求阈值、Q1.15 编码、FPGA 实际有效阈值、阈值阶段、在线 EMA、跳步结果、量化时间、网络往返时间、FPGA kernel 时间、UNet 时间和 Scheduler 时间。第一步还没有参考向量，因此 similarity 为 `NaN`。
+`step_metrics.csv` 每个扩散时间步一行，包含余弦相似度、归一化距离、两个通过标志、板端请求阈值、Q1.15/Q20 编码、阈值阶段、在线 EMA、跳步结果、量化时间、网络往返时间、FPGA kernel 时间、UNet 时间和 Scheduler 时间。第一步还没有参考向量，因此 similarity 和 normalized_distance 为 `NaN`。
 
 需要复现实验种子或临时回到固定阈值时，可以在当前 CMD 中设置：
 
 ```bat
 set SD_SEED=3669225787
 set SD_DYNAMIC_THRESHOLD=0
+set SD_DISTANCE_THRESHOLD=2.0
 ```
 
-默认 `SD_DYNAMIC_THRESHOLD=1`。动态阈值由 PC 每步计算后发送给 FPGA，现有 CSK3 bit/hwh 不需要重新生成。
+默认 `SD_DYNAMIC_THRESHOLD=1`。CSK4 动态阈值在 PYNQ ARM 上计算，余弦和距离比较在 FPGA 上完成，因此必须配套部署本分支生成的 CSK4 bit/hwh 和板端服务。
+
+需要做可复现的距离门限 A/B 实验时，可以直接指定：
+
+```bat
+D:\lenovo\download\conda\envs\sd_accel\python.exe combined_speed_test.py --with-baseline --pynq-host 192.168.2.99 --seed 2499984135 --distance-threshold 0.0004
+```
+
+距离门限采样和候选结果见 [`DISTANCE_THRESHOLD_EVALUATION.md`](DISTANCE_THRESHOLD_EVALUATION.md)。
 
 ## 测试
 
 本地协议测试：
 
 ```bat
-python -m unittest -v test_dynamic_threshold.py test_pynq_protocol.py
+python -m unittest -v test_config.py test_dynamic_threshold.py test_pynq_protocol.py
 ```
 
 真实 FPGA 测试：
@@ -172,7 +201,7 @@ python -m unittest -v test_dynamic_threshold.py test_pynq_protocol.py
 python test_pynq_hardware.py --host 192.168.2.99
 ```
 
-硬件测试会验证：首次无参考向量、相同向量余弦为 1、最大连续跳步限制、不同向量不通过阈值，以及 FPGA 结果与 PC int8 参考计算一致。
+硬件测试会验证：首次无参考向量、相同向量通过两项测试、最大连续跳步限制、不同向量不通过余弦阈值、近似向量通过余弦但被距离门限拒绝，以及 FPGA 统计结果与 PC int8 参考计算一致。
 
 ## 重新生成 FPGA 产物
 
@@ -185,4 +214,4 @@ D:\path\to\Vivado\2022.2\bin\vivado.bat -mode batch -source pynq_cosine_overlay\
 
 ## 限制
 
-PYNQ-Z2 只负责压缩特征的统计和完整跳步控制。完整 CLIP、UNet 和 VAE 的参数量及带宽需求远超 Zynq-7020 的资源，因此仍由 PC GPU 执行。当前动态阈值结果覆盖同一提示词的 5 个成对随机种子；正式性能结论仍应继续增加不同提示词和场景。
+PYNQ-Z2 负责动态阈值状态、压缩特征统计和完整跳步控制。完整 CLIP、UNet 和 VAE 的参数量及带宽需求远超 Zynq-7020 的资源，因此仍由 PC GPU 执行。当前距离阈值 `2.0` 只用于采集和兼容；校准已证明单一全局距离阈值不能避免所有种子的轨迹退化。正式性能结论还必须覆盖更多随机种子、不同提示词和场景。

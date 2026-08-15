@@ -10,7 +10,6 @@ from pathlib import Path
 import torch
 
 from config import *
-from dynamic_threshold import DynamicThresholdController
 from pynq_cosine_client import FEATURE_DOWNSAMPLE_FACTOR, PynqCosineClient
 
 
@@ -25,6 +24,11 @@ STEP_FIELDS = [
     "threshold_phase",
     "adjacent_similarity_ema",
     "threshold_passed",
+    "cosine_passed",
+    "distance_passed",
+    "normalized_distance",
+    "distance_threshold",
+    "distance_threshold_q20",
     "should_skip",
     "action",
     "skip_streak",
@@ -49,7 +53,7 @@ def run_original_steps(num_steps, filename):
         negative_prompt=NEGATIVE_PROMPT,
         num_inference_steps=num_steps,
         guidance_scale=GUIDANCE,
-        generator=make_generator(),
+        generator=make_generator(RUN_SEED),
     ).images[0]
     sync()
     elapsed = time.perf_counter() - started
@@ -58,11 +62,26 @@ def run_original_steps(num_steps, filename):
     return elapsed, image
 
 
-def run_with_dynamic_steps(filename, pynq_client):
+def run_with_dynamic_steps(filename, pynq_client, distance_threshold):
     """Run SD while PYNQ makes every cosine-based skip decision."""
     print("\n=== Dynamic diffusion with PYNQ-Z2 decisions ===")
 
     pynq_client.reset()
+    pynq_client.configure(
+        enabled=DYNAMIC_THRESHOLD_ENABLED,
+        total_steps=BASE_STEPS,
+        warmup_steps=WARMUP_STEPS,
+        max_consecutive_skips=MAX_CONSECUTIVE_SKIPS,
+        fixed_threshold=SIMILARITY_THRESHOLD,
+        warmup_threshold=WARMUP_SIMILARITY_THRESHOLD,
+        middle_threshold=MIDDLE_SIMILARITY_THRESHOLD,
+        late_start_ratio=LATE_THRESHOLD_START_RATIO,
+        late_margin=LATE_THRESHOLD_MARGIN,
+        late_min=LATE_THRESHOLD_MIN,
+        late_max=LATE_THRESHOLD_MAX,
+        ema_alpha=THRESHOLD_EMA_ALPHA,
+        distance_threshold=distance_threshold,
+    )
     sync()
     started = time.perf_counter()
 
@@ -79,7 +98,7 @@ def run_with_dynamic_steps(filename, pynq_client):
     pipe.scheduler.set_timesteps(BASE_STEPS, device=DEVICE)
     latents = torch.randn(
         (1, 4, 64, 64),
-        generator=make_generator(),
+        generator=make_generator(RUN_SEED),
         device=DEVICE,
         dtype=torch.float16 if DEVICE == "cuda" else torch.float32,
     )
@@ -89,19 +108,6 @@ def run_with_dynamic_steps(filename, pynq_client):
     executed_steps = 0
     skipped_steps = 0
     step_rows = []
-    threshold_controller = DynamicThresholdController(
-        total_steps=BASE_STEPS,
-        warmup_steps=WARMUP_STEPS,
-        enabled=DYNAMIC_THRESHOLD_ENABLED,
-        fixed_threshold=SIMILARITY_THRESHOLD,
-        warmup_threshold=WARMUP_SIMILARITY_THRESHOLD,
-        middle_threshold=MIDDLE_SIMILARITY_THRESHOLD,
-        late_start_ratio=LATE_THRESHOLD_START_RATIO,
-        late_margin=LATE_THRESHOLD_MARGIN,
-        late_min=LATE_THRESHOLD_MIN,
-        late_max=LATE_THRESHOLD_MAX,
-        ema_alpha=THRESHOLD_EMA_ALPHA,
-    )
     for step_index, timestep in enumerate(pipe.scheduler.timesteps):
         step_started = time.perf_counter()
         latent_model_input = torch.cat([latents] * 2)
@@ -109,16 +115,11 @@ def run_with_dynamic_steps(filename, pynq_client):
             latent_model_input, timestep
         )
 
-        threshold_point = threshold_controller.point_for(step_index)
         decision = pynq_client.decide(
             latent_model_input,
             step_index=step_index,
-            threshold=threshold_point.value,
-            warmup_steps=WARMUP_STEPS,
-            max_consecutive_skips=MAX_CONSECUTIVE_SKIPS,
         )
         should_skip = decision.should_skip
-        threshold_controller.observe(decision.similarity, should_skip)
         skip_streak = decision.skip_streak
         action = "SKIP" if should_skip else "UNET"
         similarity_text = (
@@ -127,8 +128,9 @@ def run_with_dynamic_steps(filename, pynq_client):
         print(
             f"[PYNQ] step {step_index + 1:03d}/{BASE_STEPS}: {action} "
             f"similarity={similarity_text} "
+            f"distance={decision.normalized_distance:.6f} "
             f"threshold={decision.effective_threshold:.6f} "
-            f"phase={threshold_point.phase} "
+            f"phase={decision.threshold_phase} "
             f"kernel={decision.kernel_ms:.3f} ms "
             f"round-trip={decision.round_trip_ms:.3f} ms"
         )
@@ -171,11 +173,16 @@ def run_with_dynamic_steps(filename, pynq_client):
                 "timestep": int(timestep.item()),
                 "similarity": decision.similarity,
                 "threshold": decision.effective_threshold,
-                "threshold_requested": threshold_point.value,
+                "threshold_requested": decision.threshold_requested,
                 "threshold_q15": decision.threshold_q15,
-                "threshold_phase": threshold_point.phase,
-                "adjacent_similarity_ema": threshold_point.adjacent_similarity_ema,
+                "threshold_phase": decision.threshold_phase,
+                "adjacent_similarity_ema": decision.adjacent_similarity_ema,
                 "threshold_passed": int(decision.threshold_passed),
+                "cosine_passed": int(decision.cosine_passed),
+                "distance_passed": int(decision.distance_passed),
+                "normalized_distance": decision.normalized_distance,
+                "distance_threshold": decision.effective_distance_threshold,
+                "distance_threshold_q20": decision.distance_threshold_q20,
                 "should_skip": int(should_skip),
                 "action": action,
                 "skip_streak": skip_streak,
@@ -279,6 +286,10 @@ def parse_args():
     )
     parser.add_argument("--pynq-host", default=PYNQ_HOST)
     parser.add_argument("--pynq-port", type=int, default=PYNQ_PORT)
+    parser.add_argument("--seed", type=int, default=RUN_SEED)
+    parser.add_argument(
+        "--distance-threshold", type=float, default=DISTANCE_THRESHOLD
+    )
     parser.add_argument("--output", default="combo_step_dynamic_pynq.png")
     parser.add_argument("--experiment-root", default="experiments")
     parser.add_argument(
@@ -296,8 +307,13 @@ def parse_args():
 
 
 def main():
-    global pipe
+    global pipe, RUN_SEED
     args = parse_args()
+    if not 0 <= args.seed <= 0xFFFFFFFF:
+        raise SystemExit("--seed must be between 0 and 4294967295")
+    if not math.isfinite(args.distance_threshold) or not 0.0 <= args.distance_threshold <= 2.0:
+        raise SystemExit("--distance-threshold must be a finite value in [0, 2]")
+    RUN_SEED = args.seed
     experiment_dir = create_experiment_directory(args.experiment_root)
     print("=" * 68)
     print("Stable Diffusion + PYNQ-Z2 cosine skip control")
@@ -317,7 +333,7 @@ def main():
             f"Details: {exc}"
         ) from exc
 
-    print("PYNQ connection and CSK3 protocol check passed.")
+    print("PYNQ connection and CSK4 protocol check passed.")
     client.close()
 
     baseline_elapsed = None
@@ -341,7 +357,7 @@ def main():
             skipped_steps,
             dynamic_image,
             step_rows,
-        ) = run_with_dynamic_steps(dynamic_path, client)
+        ) = run_with_dynamic_steps(dynamic_path, client, args.distance_threshold)
         dynamic_image.save(args.output)
         write_step_metrics(experiment_dir / "step_metrics.csv", step_rows)
 
@@ -382,13 +398,18 @@ def main():
             } if DYNAMIC_THRESHOLD_ENABLED else None,
             "warmup_steps": WARMUP_STEPS,
             "max_consecutive_skips": MAX_CONSECUTIVE_SKIPS,
+            "distance_threshold": args.distance_threshold,
             "baseline_seconds": baseline_elapsed,
             "dynamic_seconds": dynamic_elapsed,
             "speedup": speedup,
             "pynq_feature_bytes": client.total_bytes_sent,
             "pynq_feature_dtype": "int8",
             "pynq_downsample_factor": FEATURE_DOWNSAMPLE_FACTOR,
+            "dynamic_threshold_controller_location": "PYNQ ARM",
+            "cosine_similarity_location": "FPGA",
+            "feature_distance_location": "FPGA",
             "skip_controller_location": "FPGA",
+            "skip_rule": "cosine_passed AND distance_passed",
             "average_round_trip_ms": (
                 client.total_round_trip_ms / client.step_calls
                 if client.step_calls

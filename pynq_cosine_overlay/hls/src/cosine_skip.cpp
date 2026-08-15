@@ -12,7 +12,9 @@ extern "C" int cosine_skip(
     norm_t *norm_x_out,
     norm_t *norm_y_out,
     int *threshold_passed_out,
-    int *skip_streak_out
+    int *skip_streak_out,
+    int distance_threshold_q20,
+    int *distance_passed_out
 ) {
 #pragma HLS INTERFACE m_axi port=x offset=slave bundle=gmem depth=MAX_VECTOR_LEN max_read_burst_length=64 num_read_outstanding=8
 #pragma HLS INTERFACE s_axilite port=x bundle=control
@@ -27,6 +29,8 @@ extern "C" int cosine_skip(
 #pragma HLS INTERFACE s_axilite port=norm_y_out bundle=control
 #pragma HLS INTERFACE s_axilite port=threshold_passed_out bundle=control
 #pragma HLS INTERFACE s_axilite port=skip_streak_out bundle=control
+#pragma HLS INTERFACE s_axilite port=distance_threshold_q20 bundle=control
+#pragma HLS INTERFACE s_axilite port=distance_passed_out bundle=control
 #pragma HLS INTERFACE s_axilite port=return bundle=control
 
     static data_t reference[MAX_VECTOR_LEN];
@@ -40,6 +44,7 @@ extern "C" int cosine_skip(
     *norm_y_out = 0;
     *threshold_passed_out = 0;
     *skip_streak_out = 0;
+    *distance_passed_out = 0;
 
     if (reset_state != 0) {
         has_reference = 0;
@@ -88,8 +93,27 @@ extern "C" int cosine_skip(
     }
     *threshold_passed_out = threshold_passed ? 1 : 0;
 
+    bool distance_passed = false;
+    if (comparable && (norm_x != 0 || norm_y != 0)) {
+        ap_uint<65> norm_sum = (ap_uint<65>)norm_x + (ap_uint<65>)norm_y;
+        ap_int<66> distance_signed =
+            (ap_int<66>)norm_sum - ((ap_int<66>)dot << 1);
+        ap_uint<66> distance_num = distance_signed > 0
+            ? (ap_uint<66>)distance_signed
+            : (ap_uint<66>)0;
+        ap_uint<32> distance_threshold = distance_threshold_q20 > 0
+            ? (ap_uint<32>)distance_threshold_q20
+            : (ap_uint<32>)0;
+        ap_uint<128> distance_left = (ap_uint<128>)distance_num << 20;
+        ap_uint<128> distance_right =
+            (ap_uint<128>)distance_threshold * (ap_uint<128>)norm_sum;
+        distance_passed = distance_left <= distance_right;
+    }
+    *distance_passed_out = distance_passed ? 1 : 0;
+
     bool should_skip = comparable
         && threshold_passed
+        && distance_passed
         && step_index >= warmup_steps
         && consecutive_skips < max_consecutive_skips;
 

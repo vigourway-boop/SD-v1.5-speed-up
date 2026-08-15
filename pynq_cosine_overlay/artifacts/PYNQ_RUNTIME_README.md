@@ -3,9 +3,9 @@
 The PYNQ-Z2 runs `pynq_cosine_server.py` as a persistent TCP service. The PC
 downsamples each CFG-reduced latent to `1 x 4 x 32 x 32`, quantizes it to int8,
 and sends a 4096-byte vector for every diffusion timestep. The FPGA keeps the
-reference vector in BRAM and applies cosine threshold, warmup, consecutive-skip
-limit and reference-update logic. The ARM returns the FPGA decision, skip streak
-and measured cosine similarity. The `CSK3` magic deliberately rejects an old
+reference vector in BRAM and applies cosine and normalized-distance thresholds,
+warmup, consecutive-skip limit and reference-update logic. The ARM maintains the
+dynamic-threshold schedule and returns the FPGA decision and statistics. The `CSK4` magic deliberately rejects an old
 client/server protocol combination. Deploy the bitstream, HWH and server from
 the same artifact set.
 
@@ -23,7 +23,7 @@ The default PYNQ username is `xilinx`. To use another username:
 deploy_pynq_server.cmd 192.168.2.99 your_username
 ```
 
-The command copies the bitstream, HWH and server, then installs and starts the
+The command copies the bitstream, HWH, server, dynamic controller and protocol, then installs and starts the
 `pynq-cosine` systemd service. SSH and sudo may ask for the board password.
 
 Check the service on PYNQ:
@@ -65,17 +65,19 @@ In `step_metrics.csv`, `prepare_ms` is PC quantization/copy time,
 `kernel_ms` is the board-side FPGA invocation time, including ARM MMIO setup,
 polling and result reads. The HLS core latency is smaller. `pynq_total_ms` is
 `prepare_ms + round_trip_ms`. The first similarity is `NaN` because no previous
-feature reference exists yet.
+feature reference exists yet. `normalized_distance`, `cosine_passed`, and
+`distance_passed` expose the second FPGA gate.
 
 ## Dynamic threshold schedule
 
-The PC sends a threshold with every CSK3 step request. By default it uses:
+The PC sends the schedule once in a CSK4 configuration request. The PYNQ ARM then uses:
 
 - steps 1-15: FPGA warmup forces UNet;
 - steps 16-70: strict threshold 0.99960;
 - steps 71-100: adjacent-step cosine EMA minus 0.00035, clamped to
   0.99945-0.99965.
 
-The FPGA still performs the comparison and complete skip control. No bitstream
-change is required. Set `SD_DYNAMIC_THRESHOLD=0` before launching to use the
-legacy fixed threshold, or set `SD_SEED` to reproduce a particular run.
+The FPGA performs both comparisons and complete skip control. Set
+`SD_DYNAMIC_THRESHOLD=0` before launching to use the fixed cosine threshold,
+`SD_DISTANCE_THRESHOLD=2.0` for permissive distance-curve collection, or
+`SD_SEED` to reproduce a particular run.

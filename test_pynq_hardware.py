@@ -7,6 +7,24 @@ import torch
 from pynq_cosine_client import PynqCosineClient, quantize_feature
 
 
+def configure(client, distance_threshold):
+    client.configure(
+        enabled=True,
+        total_steps=100,
+        warmup_steps=0,
+        max_consecutive_skips=2,
+        fixed_threshold=0.999,
+        warmup_threshold=0.99995,
+        middle_threshold=0.999,
+        late_start_ratio=0.7,
+        late_margin=0.00035,
+        late_min=0.99945,
+        late_max=0.99965,
+        ema_alpha=0.2,
+        distance_threshold=distance_threshold,
+    )
+
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--host", default="192.168.2.99")
@@ -21,11 +39,19 @@ def main():
 
     with PynqCosineClient(args.host, args.port) as client:
         client.reset()
-        establish = client.decide(first, 0, 0.999, 0, 2)
-        identical = client.decide(first, 1, 0.999, 0, 2)
-        second_skip = client.decide(first, 2, 0.999, 0, 2)
-        forced_unet = client.decide(first, 3, 0.999, 0, 2)
-        changed = client.decide(different, 4, 0.999, 0, 2)
+        configure(client, 2.0)
+        establish = client.decide(first, 0)
+        identical = client.decide(first, 1)
+        second_skip = client.decide(first, 2)
+        forced_unet = client.decide(first, 3)
+        changed = client.decide(different, 4)
+
+        near = first.clone()
+        near[:, :, :8, :8] += 0.1
+        client.reset()
+        configure(client, 0.0)
+        client.decide(first, 0)
+        distance_rejected = client.decide(near, 1)
 
     print("establish reference:", establish)
     print("identical feature:", identical)
@@ -38,6 +64,8 @@ def main():
         raise SystemExit("First feature has no reference, so similarity must be NaN")
     if not identical.should_skip:
         raise SystemExit("Identical feature should be skipped")
+    if not identical.cosine_passed or not identical.distance_passed:
+        raise SystemExit("Identical feature did not pass both FPGA tests")
     if abs(identical.similarity - 1.0) > 1e-9:
         raise SystemExit(f"Identical feature similarity is {identical.similarity}, not 1")
     if identical.skip_streak != 1 or not second_skip.should_skip:
@@ -63,6 +91,14 @@ def main():
             "PYNQ similarity differs from the PC compressed int8 reference: "
             f"{changed.similarity} != {expected_similarity}"
         )
+    if not distance_rejected.cosine_passed:
+        raise SystemExit(
+            "Near feature did not pass cosine; hardware distance test is inconclusive"
+        )
+    if distance_rejected.distance_passed or distance_rejected.should_skip:
+        raise SystemExit("FPGA distance gate did not reject the near feature")
+    if distance_rejected.normalized_distance <= 0.0:
+        raise SystemExit("PYNQ did not report a positive normalized distance")
     print("Real PYNQ hardware protocol test passed")
 
 

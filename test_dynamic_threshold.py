@@ -54,11 +54,24 @@ class DynamicThresholdTest(unittest.TestCase):
         self.assertEqual(point.phase, "fixed")
         self.assertEqual(point.value, 0.999)
 
+    def test_reset_clears_runtime_ema(self):
+        controller = make_controller()
+        controller.observe(float("nan"), should_skip=False)
+        controller.observe(0.9999, should_skip=False)
+        self.assertIsNotNone(controller.adjacent_similarity_ema)
+        controller.reset()
+        self.assertIsNone(controller.adjacent_similarity_ema)
+        self.assertIsNone(controller.point_for(70).adjacent_similarity_ema)
+
     def test_invalid_settings_are_rejected(self):
         with self.assertRaises(ValueError):
             make_controller(late_min=0.9998, late_max=0.9997)
         with self.assertRaises(ValueError):
             make_controller(ema_alpha=0.0)
+        with self.assertRaises(ValueError):
+            make_controller(middle_threshold=float("nan"))
+        with self.assertRaises(ValueError):
+            make_controller(fixed_threshold=1.1)
 
 
 if __name__ == "__main__":

@@ -21,7 +21,9 @@ extern "C" int cosine_skip(
     norm_t *norm_x_out,
     norm_t *norm_y_out,
     int *threshold_passed_out,
-    int *skip_streak_out
+    int *skip_streak_out,
+    int distance_threshold_q20,
+    int *distance_passed_out
 );
 
 #endif

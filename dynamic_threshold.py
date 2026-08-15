@@ -4,13 +4,14 @@ from __future__ import annotations
 
 import math
 from dataclasses import dataclass
+from typing import Optional
 
 
 @dataclass(frozen=True)
 class ThresholdPoint:
     value: float
     phase: str
-    adjacent_similarity_ema: float | None
+    adjacent_similarity_ema: Optional[float]
 
 
 class DynamicThresholdController:
@@ -41,13 +42,24 @@ class DynamicThresholdController:
             raise ValueError("ema_alpha must be in (0, 1]")
         if late_min > late_max:
             raise ValueError("late_min cannot exceed late_max")
+        thresholds = (
+            fixed_threshold,
+            warmup_threshold,
+            middle_threshold,
+            late_min,
+            late_max,
+        )
+        if any(not math.isfinite(value) or not 0.0 <= value <= 1.0 for value in thresholds):
+            raise ValueError("cosine thresholds must be finite values in [0, 1]")
+        if not math.isfinite(late_margin) or late_margin < 0.0:
+            raise ValueError("late_margin must be finite and non-negative")
 
         self.total_steps = total_steps
         self.warmup_steps = warmup_steps
         self.enabled = enabled
-        self.fixed_threshold = fixed_threshold
-        self.warmup_threshold = warmup_threshold
-        self.middle_threshold = middle_threshold
+        self.fixed_threshold = float(fixed_threshold)
+        self.warmup_threshold = float(warmup_threshold)
+        self.middle_threshold = float(middle_threshold)
         self.late_start_step = max(
             warmup_steps, min(total_steps, round(total_steps * late_start_ratio))
         )
@@ -55,8 +67,13 @@ class DynamicThresholdController:
         self.late_min = late_min
         self.late_max = late_max
         self.ema_alpha = ema_alpha
-        self._adjacent_similarity_ema: float | None = None
-        self._previous_should_skip: bool | None = None
+        self._adjacent_similarity_ema = None  # type: Optional[float]
+        self._previous_should_skip = None  # type: Optional[bool]
+
+    def reset(self) -> None:
+        """Clear learned runtime state while retaining the configured schedule."""
+        self._adjacent_similarity_ema = None
+        self._previous_should_skip = None
 
     def point_for(self, step_index: int) -> ThresholdPoint:
         if not 0 <= step_index < self.total_steps:
@@ -99,5 +116,5 @@ class DynamicThresholdController:
         self._previous_should_skip = bool(should_skip)
 
     @property
-    def adjacent_similarity_ema(self) -> float | None:
+    def adjacent_similarity_ema(self) -> Optional[float]:
         return self._adjacent_similarity_ema

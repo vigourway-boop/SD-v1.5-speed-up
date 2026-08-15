@@ -1,7 +1,7 @@
 Build status
 ============
 
-CSK3 completed successfully with Vivado/Vitis HLS 2022.2 for the PYNQ-Z2
+CSK4 completed successfully with Vivado/Vitis HLS 2022.2 for the PYNQ-Z2
 Zynq-7020 part xc7z020clg400-1.
 
 Generated deliverables:
@@ -17,22 +17,24 @@ Source and scripts:
 - hls/run_hls.tcl
 - vivado/create_overlay.tcl
 
-CSK3 data path:
+CSK4 data path:
 - The PC removes the duplicate CFG batch.
 - The PC applies 2x2 average pooling to 4 x 64 x 64 latent features.
 - Each 4 x 32 x 32 feature is symmetrically quantized to 4096 int8 values.
 - The per-step payload is 4096 bytes, 8x smaller than CSK2's 32768 bytes.
+- The PYNQ ARM stores the dynamic-threshold controller state.
 - The FPGA stores the reference feature in BRAM and controls all skip decisions.
+- The FPGA requires both cosine and normalized-distance gates to pass.
 
 Validated build results:
-- HLS C simulation passed with 0 errors.
+- HLS C simulation passed with 0 errors, including the cosine-pass/distance-fail case.
 - HLS C synthesis and IP export passed.
 - HLS maximum latency: 8229 cycles, or 82.29 us at 100 MHz.
 - HLS estimated clock: 7.300 ns, or 136.99 MHz.
-- HLS estimate: 2 BRAM, 35 DSP, 9% LUT.
+- HLS estimate: 2 BRAM, 41 DSP, 10% LUT.
 - Vivado block design validation, synthesis, implementation and bitstream passed.
-- Final routed timing passed at 100 MHz: WNS +0.337 ns, TNS 0.000 ns.
-- Implemented utilization: LUT 6.65%, FF 3.71%, BRAM 1.07%, DSP 30.45%.
+- Final routed timing passed at 100 MHz: WNS +0.315 ns, TNS 0.000 ns.
+- Implemented utilization: LUT 7.35%, FF 4.10%, BRAM 1.07%, DSP 34.09%.
 
 Final AXI-Lite register map:
 - CTRL                       0x00
@@ -49,6 +51,8 @@ Final AXI-Lite register map:
 - NORM_Y_OUT                 0x84/0x88
 - THRESHOLD_PASSED_OUT       0x9C
 - SKIP_STREAK_OUT            0xAC
+- DISTANCE_THRESHOLD_Q20     0xBC
+- DISTANCE_PASSED_OUT        0xC4
 
 Validated hardware behavior on 192.168.2.99:
 - First feature establishes the reference and cannot skip.
@@ -74,10 +78,18 @@ Validated end-to-end experiment:
 - CLIP Score baseline/dynamic: 30.5024/30.3823
 
 Notes:
-- The FPGA computes dot, norms, cosine-threshold decision, warmup gating,
-  consecutive-skip limiting, skip streak and reference updates.
-- The PYNQ ARM only handles transport, IP control and conversion of FPGA
-  statistics into the reported floating-point cosine value.
-- The CSK3 protocol intentionally rejects CSK2 clients and servers.
+- The FPGA computes dot, norms, cosine-threshold decision, normalized-distance
+  decision, warmup gating, consecutive-skip limiting, skip streak and reference updates.
+- The PYNQ ARM handles transport, dynamic threshold scheduling, IP control and
+  conversion of FPGA statistics into reported floating-point values.
+- The CSK4 protocol intentionally rejects older CSK2/CSK3 clients and servers.
 - Deploy the bitstream, HWH and server from the same artifact set.
 - The bit and HWH files must use the same base filename in one directory.
+- The command-line seed path was corrected so baseline hashes are identical
+  across separate threshold runs using the same explicit seed.
+- A corrected 3-seed x 3-threshold calibration found that 0.00035 had the best
+  average candidate quality (1.729x speedup and 33.192 dB PSNR), but its worst
+  seed reached only 23.747 dB PSNR.
+- A stricter 0.00015 distance gate reduced that seed to 21 skips and 1.22x
+  speedup but still reached only 24.455 dB PSNR. No distance threshold was
+  promoted to the default; the skip policy needs trajectory-aware refinement.

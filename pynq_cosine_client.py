@@ -3,39 +3,55 @@
 from __future__ import annotations
 
 import socket
-import struct
 import time
 from dataclasses import dataclass
 
 import numpy as np
 import torch.nn.functional as F
 
+from pynq_protocol import (
+    CMD_CONFIG,
+    CMD_PING,
+    CMD_RESET,
+    CMD_STEP,
+    CONFIG,
+    MAGIC,
+    REQUEST,
+    RESPONSE,
+    STATUS_OK,
+    phase_name,
+)
 
-MAGIC = b"CSK3"
-CMD_RESET = 1
-CMD_PING = 2
-CMD_STEP = 3
 
-REQUEST = struct.Struct("!4sB3xIIIII")
-RESPONSE = struct.Struct("!4sBBBBIIId")
-STATUS_OK = 0
 FEATURE_DOWNSAMPLE_FACTOR = 2
 
 
 @dataclass(frozen=True)
 class PynqDecision:
-    should_skip: bool
-    threshold_passed: bool
-    step_index: int
-    kernel_ms: float
-    server_ms: float
-    round_trip_ms: float
-    similarity: float
-    skip_streak: int
+    should_skip: bool = False
+    cosine_passed: bool = False
+    distance_passed: bool = False
+    step_index: int = 0
+    kernel_ms: float = 0.0
+    server_ms: float = 0.0
+    round_trip_ms: float = 0.0
+    similarity: float = float("nan")
+    normalized_distance: float = float("nan")
+    skip_streak: int = 0
     threshold_q15: int = 0
+    distance_threshold_q20: int = 0
     effective_threshold: float = 0.0
+    effective_distance_threshold: float = 0.0
+    threshold_requested: float = float("nan")
+    threshold_phase: str = "none"
+    adjacent_similarity_ema: float = float("nan")
     prepare_ms: float = 0.0
     feature_bytes: int = 0
+
+    @property
+    def threshold_passed(self) -> bool:
+        """Compatibility alias for the original cosine-only result."""
+        return self.cosine_passed
 
 
 def compress_feature(
@@ -76,7 +92,7 @@ def compress_feature(
 
 
 def quantize_feature(feature) -> np.ndarray:
-    """Backward-compatible alias for the CSK3 compression path."""
+    """Backward-compatible alias for the int8 compression path."""
     return compress_feature(feature)
 
 
@@ -87,6 +103,15 @@ def encode_threshold(threshold: float) -> tuple[int, float]:
         raise ValueError("Cosine threshold must be finite")
     encoded = min(32767, max(0, int(threshold * 32768.0)))
     return encoded, encoded / 32768.0
+
+
+def encode_distance_threshold(threshold: float) -> tuple[int, float]:
+    """Convert a normalized-distance threshold to unsigned Q12.20."""
+    threshold = float(threshold)
+    if not np.isfinite(threshold):
+        raise ValueError("Distance threshold must be finite")
+    encoded = min(0x7FFFFFFF, max(0, int(round(threshold * (1 << 20)))))
+    return encoded, encoded / float(1 << 20)
 
 
 class PynqCosineClient:
@@ -132,25 +157,52 @@ class PynqCosineClient:
         self.total_round_trip_ms = 0.0
         self.step_calls = 0
 
+    def configure(
+        self,
+        *,
+        enabled: bool,
+        total_steps: int,
+        warmup_steps: int,
+        max_consecutive_skips: int,
+        fixed_threshold: float,
+        warmup_threshold: float,
+        middle_threshold: float,
+        late_start_ratio: float,
+        late_margin: float,
+        late_min: float,
+        late_max: float,
+        ema_alpha: float,
+        distance_threshold: float,
+    ) -> None:
+        payload = CONFIG.pack(
+            int(bool(enabled)),
+            int(total_steps),
+            int(warmup_steps),
+            int(max_consecutive_skips),
+            float(fixed_threshold),
+            float(warmup_threshold),
+            float(middle_threshold),
+            float(late_start_ratio),
+            float(late_margin),
+            float(late_min),
+            float(late_max),
+            float(ema_alpha),
+            float(distance_threshold),
+        )
+        self._request(CMD_CONFIG, length=len(payload), payload=payload)
+
     def decide(
         self,
         feature,
         step_index: int,
-        threshold: float,
-        warmup_steps: int,
-        max_consecutive_skips: int,
     ) -> PynqDecision:
         prepare_started = time.perf_counter()
         quantized = compress_feature(feature)
         prepare_ms = (time.perf_counter() - prepare_started) * 1000.0
-        threshold_q15, effective_threshold = encode_threshold(threshold)
         response = self._request(
             CMD_STEP,
             step_index=int(step_index),
             length=int(quantized.size),
-            threshold_q15=threshold_q15,
-            warmup_steps=int(warmup_steps),
-            max_consecutive_skips=int(max_consecutive_skips),
             payload=memoryview(quantized).cast("B"),
         )
         self.step_calls += 1
@@ -158,15 +210,22 @@ class PynqCosineClient:
         self.total_round_trip_ms += response.round_trip_ms
         return PynqDecision(
             should_skip=response.should_skip,
-            threshold_passed=response.threshold_passed,
+            cosine_passed=response.cosine_passed,
+            distance_passed=response.distance_passed,
             step_index=response.step_index,
             kernel_ms=response.kernel_ms,
             server_ms=response.server_ms,
             round_trip_ms=response.round_trip_ms,
             similarity=response.similarity,
+            normalized_distance=response.normalized_distance,
             skip_streak=response.skip_streak,
-            threshold_q15=threshold_q15,
-            effective_threshold=effective_threshold,
+            threshold_q15=response.threshold_q15,
+            distance_threshold_q20=response.distance_threshold_q20,
+            effective_threshold=response.effective_threshold,
+            effective_distance_threshold=response.effective_distance_threshold,
+            threshold_requested=response.threshold_requested,
+            threshold_phase=response.threshold_phase,
+            adjacent_similarity_ema=response.adjacent_similarity_ema,
             prepare_ms=prepare_ms,
             feature_bytes=quantized.nbytes,
         )
@@ -176,9 +235,6 @@ class PynqCosineClient:
         command: int,
         step_index: int = 0,
         length: int = 0,
-        threshold_q15: int = 0,
-        warmup_steps: int = 0,
-        max_consecutive_skips: int = 0,
         payload=None,
     ) -> PynqDecision:
         if self._socket is None:
@@ -188,9 +244,6 @@ class PynqCosineClient:
             command,
             step_index,
             length,
-            threshold_q15,
-            warmup_steps,
-            max_consecutive_skips,
         )
         started = time.perf_counter()
         try:
@@ -208,12 +261,19 @@ class PynqCosineClient:
             magic,
             status,
             decision,
-            threshold_passed,
+            cosine_passed,
+            distance_passed,
             skip_streak,
+            phase,
             reply_step,
             kernel_us,
             server_us,
+            threshold_q15,
+            distance_threshold_q20,
             similarity,
+            normalized_distance,
+            threshold_requested,
+            adjacent_similarity_ema,
         ) = RESPONSE.unpack(raw)
         if magic != MAGIC:
             raise RuntimeError(f"Invalid PYNQ response magic: {magic!r}")
@@ -225,13 +285,22 @@ class PynqCosineClient:
             )
         return PynqDecision(
             should_skip=bool(decision),
-            threshold_passed=bool(threshold_passed),
+            cosine_passed=bool(cosine_passed),
+            distance_passed=bool(distance_passed),
             step_index=reply_step,
             kernel_ms=kernel_us / 1000.0,
             server_ms=server_us / 1000.0,
             round_trip_ms=round_trip_ms,
             similarity=similarity,
+            normalized_distance=normalized_distance,
             skip_streak=skip_streak,
+            threshold_q15=threshold_q15,
+            distance_threshold_q20=distance_threshold_q20,
+            effective_threshold=threshold_q15 / 32768.0,
+            effective_distance_threshold=distance_threshold_q20 / float(1 << 20),
+            threshold_requested=threshold_requested,
+            threshold_phase=phase_name(phase),
+            adjacent_similarity_ema=adjacent_similarity_ema,
         )
 
     def _recv_exact(self, size: int) -> bytes:
