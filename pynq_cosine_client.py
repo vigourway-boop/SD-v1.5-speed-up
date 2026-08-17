@@ -128,12 +128,39 @@ class PynqCosineClient:
 
     def connect(self) -> None:
         if self._socket is not None:
+            self.health_check()
             return
         sock = socket.create_connection((self.host, self.port), self.timeout)
         sock.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, 1)
         sock.settimeout(self.timeout)
         self._socket = sock
         self._request(CMD_PING)
+
+    def connect_with_retry(self, attempts: int = 5, delay_seconds: float = 2.0) -> int:
+        """Connect and verify the protocol, returning the successful attempt."""
+        if attempts < 1:
+            raise ValueError("attempts must be at least 1")
+        if delay_seconds < 0.0:
+            raise ValueError("delay_seconds cannot be negative")
+
+        last_error = None
+        for attempt in range(1, attempts + 1):
+            try:
+                self.connect()
+                return attempt
+            except (ConnectionError, OSError, TimeoutError) as exc:
+                last_error = exc
+                self.close()
+                if attempt < attempts:
+                    time.sleep(delay_seconds)
+        raise ConnectionError(
+            f"PYNQ health check failed after {attempts} attempts at "
+            f"{self.host}:{self.port}: {last_error}"
+        ) from last_error
+
+    def health_check(self) -> float:
+        """Verify an existing CSK4 connection and return round-trip time in ms."""
+        return self._request(CMD_PING).round_trip_ms
 
     def close(self) -> None:
         if self._socket is not None:
@@ -276,11 +303,13 @@ class PynqCosineClient:
             adjacent_similarity_ema,
         ) = RESPONSE.unpack(raw)
         if magic != MAGIC:
-            raise RuntimeError(f"Invalid PYNQ response magic: {magic!r}")
+            self.close()
+            raise ConnectionError(f"Invalid PYNQ response magic: {magic!r}")
         if status != STATUS_OK:
             raise RuntimeError(f"PYNQ server rejected command {command}, status={status}")
         if command == CMD_STEP and reply_step != step_index:
-            raise RuntimeError(
+            self.close()
+            raise ConnectionError(
                 f"PYNQ response step mismatch: expected {step_index}, got {reply_step}"
             )
         return PynqDecision(

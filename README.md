@@ -2,7 +2,7 @@
 
 基于时间步特征余弦相似度和归一化特征距离的 Stable Diffusion 1.5 动态跳步加速项目。
 
-Stable Diffusion 的 CLIP、UNet、Scheduler 和 VAE 在 PC GPU 上运行。PC 每个扩散时间步先去除重复 CFG batch，执行 `2x2` 平均池化，再将 latent 特征量化为 int8 并通过以太网发送给 PYNQ-Z2。PYNQ ARM 维护三阶段动态阈值、相邻步余弦 EMA 和参数状态。FPGA 使用片上 BRAM 保存参考特征，并完成点积、范数、余弦阈值、归一化距离阈值、warmup、连续跳步限制和参考更新。
+Stable Diffusion 的 CLIP、UNet、Scheduler 和 VAE 在 PC GPU 上运行。PC 每个扩散时间步先去除重复 CFG batch，执行 `2x2` 平均池化，再将 latent 特征量化为 int8 并通过以太网发送给 PYNQ-Z2。PYNQ ARM 维护三阶段动态阈值、相邻步余弦 EMA 和参数状态。FPGA 使用片上 BRAM 保存参考特征，并完成点积、范数、余弦阈值、归一化距离阈值、warmup、连续跳步限制和参考更新。跳步时 PC 默认用最近两次真实 UNet 输出进行阻尼线性外推，不再直接原样复用上一结果。
 
 ```mermaid
 flowchart LR
@@ -11,6 +11,7 @@ flowchart LR
     C -->|"dynamic threshold"| D["FPGA cosine + distance IP"]
     D --> C
     C -->|"statistics + skip decision"| A
+    A -->|"skipped: damped linear prediction"| A
     A --> E["Scheduler + VAE image"]
 ```
 
@@ -104,14 +105,20 @@ FPGA 使用 Q20 阈值交叉相乘，不执行除法。默认 `SD_DISTANCE_THRES
 combined_speed_test.py       一键 baseline + PYNQ 动态生成与评估
 config.py                    模型、提示词、随机种子和跳步参数
 dynamic_threshold.py         三阶段动态阈值和在线 EMA 控制器
+skip_predictor.py            双历史 UNet 阻尼线性跳步预测器
 pynq_protocol.py             PC 与 PYNQ 共用的 CSK4 二进制协议
 pynq_cosine_client.py        PC 端特征压缩和 CSK4 客户端
 quality_metrics.py           PSNR、SSIM、LPIPS、CLIP Score
+experiment_report.py         离线中英双语 HTML 实验报告
 run_pynq_speedup.cmd         Windows 一键运行入口
 deploy_pynq_server.cmd       部署 bit/hwh 和板端服务
 test_pynq_protocol.py        本地协议测试
 test_dynamic_threshold.py    动态阈值阶段、EMA 和边界测试
 test_config.py               显式随机种子的复现与差异测试
+test_skip_predictor.py       跳步预测、回退和边界测试
+test_experiment_report.py    离线 HTML 报告测试
+test_timing_summary.py       中英双语耗时 CSV 测试
+test_network_recovery.py     连接重试和整轮恢复测试
 test_pynq_hardware.py        真实 PYNQ/FPGA 测试
 pynq_cosine_overlay/
   hls/src/                   HLS C++ IP 源码和测试台
@@ -163,11 +170,19 @@ experiments/YYYYMMDD_HHMMSS_seed_<seed>/
   baseline.png
   pynq_dynamic.png
   step_metrics.csv
+  timing_summary.csv
   summary.json
   quality_metrics.json
+  report.html
 ```
 
-`step_metrics.csv` 每个扩散时间步一行，包含余弦相似度、归一化距离、两个通过标志、板端请求阈值、Q1.15/Q20 编码、阈值阶段、在线 EMA、跳步结果、量化时间、网络往返时间、FPGA kernel 时间、UNet 时间和 Scheduler 时间。第一步还没有参考向量，因此 similarity 和 normalized_distance 为 `NaN`。
+`step_metrics.csv` 每个扩散时间步一行，包含余弦相似度、归一化距离、两个通过标志、板端请求阈值、Q1.15/Q20 编码、阈值阶段、在线 EMA、跳步结果、预测模式、线性外推系数、预测耗时、量化时间、网络往返时间、FPGA kernel 时间、UNet 时间和 Scheduler 时间。第一步还没有参考向量，因此 similarity 和 normalized_distance 为 `NaN`。
+
+`timing_summary.csv` 是面向阅读的中英双语耗时表，使用 Windows Excel 可直接识别的 UTF-8 BOM 编码。表中包含模型加载、预热、Baseline 总生成、Dynamic 总生成、文本编码器、latent 初始化、扩散循环、UNet、跳步预测、Scheduler、PYNQ 特征准备、网络往返、FPGA kernel、PYNQ 服务端、VAE、图片保存和质量评估。生成总耗时包含特征压缩、网络传输和 FPGA 判断；质量评估和 PNG 保存单独列出，不计入加速比。网络往返包含 PYNQ 服务端与 FPGA 时间，因此总计与子项不能重复相加。相同数据也写入 `summary.json` 的 `timing_ms` 字段。
+
+`report.html` 是每次实验自动生成的离线中英双语报告。直接双击即可查看两张图片、加速比、质量指标、耗时表、跳步分布、相似度/阈值曲线、预测器参数和断线恢复次数，不依赖网络或额外网页服务。
+
+程序启动时会先用 CSK4 `PING` 检查板卡服务，默认最多连接 5 次、每次间隔 2 秒。Dynamic 运行中断线时不会重复发送状态不确定的单个 STEP，而是重新连接、重置 FPGA，并用相同随机种子从头重跑整轮 Dynamic。默认允许 1 次整轮恢复；PYNQ 上的 systemd 服务已配置为板卡重启后自动启动和异常退出后自动重启。
 
 需要复现实验种子或临时回到固定阈值时，可以在当前 CMD 中设置：
 
@@ -179,6 +194,22 @@ set SD_DISTANCE_THRESHOLD=2.0
 
 默认 `SD_DYNAMIC_THRESHOLD=1`。CSK4 动态阈值在 PYNQ ARM 上计算，余弦和距离比较在 FPGA 上完成，因此必须配套部署本分支生成的 CSK4 bit/hwh 和板端服务。
 
+默认跳步预测器为 `linear`，阻尼系数 `0.5`，最大外推系数 `1.5`。需要与旧版“直接复用上一个 UNet 输出”做 A/B 对照时使用：
+
+```bat
+D:\lenovo\download\conda\envs\sd_accel\python.exe combined_speed_test.py --with-baseline --skip-predictor reuse --seed 1107158101
+```
+
+网络恢复参数可以通过 `--connect-attempts`、`--retry-delay` 和 `--generation-retries` 调整。
+
+运行15个 seed × 两种预测模式的30组严格成对实验：
+
+```bat
+D:\lenovo\download\conda\envs\sd_accel\python.exe predictor_batch_experiment.py
+```
+
+批量工具只加载一次 SD，并在全部图片生成后复用同一套 LPIPS/CLIP 模型做质量评估。长任务如果在质量阶段中断，可以对原目录使用 `--evaluate-existing` 恢复；只需重新生成汇总报告时使用 `--report-only`。
+
 需要做可复现的距离门限 A/B 实验时，可以直接指定：
 
 ```bat
@@ -187,12 +218,16 @@ D:\lenovo\download\conda\envs\sd_accel\python.exe combined_speed_test.py --with-
 
 距离门限采样和候选结果见 [`DISTANCE_THRESHOLD_EVALUATION.md`](DISTANCE_THRESHOLD_EVALUATION.md)。
 
+双历史阻尼线性预测器已完成 3 个随机 seed 的真实 PYNQ-Z2 初步验证：跳步数 `49-52`，加速比 `1.87-1.94x`，其中 2 组 PSNR 约 `35 dB`，1 组为 `25.751 dB`。完整结果、限制和后续同 seed 成对实验要求见 [`SKIP_PREDICTOR_EVALUATION.md`](SKIP_PREDICTOR_EVALUATION.md)。
+
+随后完成了 15 个固定 seed × `linear/reuse` 两种模式的 30 组严格成对实验。`linear` 在 15/15 个 seed 的 PSNR、SSIM 和 LPIPS 上均优于 `reuse`，平均 PSNR 提升 `2.708 dB`，加速比基本不变；但仍有 5/15 组 PSNR 低于 30 dB。完整统计和不足分析见 [`PREDICTOR_30_RUN_REPORT.md`](PREDICTOR_30_RUN_REPORT.md)。批量工具为 `predictor_batch_experiment.py`。
+
 ## 测试
 
 本地协议测试：
 
 ```bat
-python -m unittest -v test_config.py test_dynamic_threshold.py test_pynq_protocol.py
+python -m unittest -v test_config.py test_timing_summary.py test_skip_predictor.py test_experiment_report.py test_network_recovery.py test_predictor_batch.py test_dynamic_threshold.py test_pynq_protocol.py
 ```
 
 真实 FPGA 测试：

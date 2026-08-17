@@ -42,75 +42,110 @@ def _json_safe(value):
     return value
 
 
-def evaluate_quality(baseline_image, dynamic_image, prompt: str, device: str) -> dict:
-    """Calculate PSNR, SSIM, LPIPS and CLIP Score after timed generation."""
-    from skimage.metrics import peak_signal_noise_ratio, structural_similarity
+class QualityEvaluator:
+    """Reuse LPIPS and CLIP models across multiple image comparisons."""
 
-    started = time.perf_counter()
-    baseline = _as_rgb_array(baseline_image)
-    dynamic = _as_rgb_array(dynamic_image)
-    if baseline.shape != dynamic.shape:
-        raise ValueError(
-            f"Quality comparison needs equal image sizes: {baseline.shape} != {dynamic.shape}"
+    def __init__(self, device: str):
+        self.device = device
+        self.lpips_model = None
+        self.clip_model = None
+        self.clip_processor = None
+
+    def __enter__(self):
+        import lpips
+        from transformers import CLIPModel, CLIPProcessor
+
+        self.lpips_model = lpips.LPIPS(net="alex").to(self.device).eval()
+        try:
+            self.clip_model = CLIPModel.from_pretrained(
+                CLIP_MODEL_ID, local_files_only=True
+            ).to(self.device).eval()
+            self.clip_processor = CLIPProcessor.from_pretrained(
+                CLIP_MODEL_ID, local_files_only=True
+            )
+        except OSError:
+            self.clip_model = CLIPModel.from_pretrained(CLIP_MODEL_ID).to(
+                self.device
+            ).eval()
+            self.clip_processor = CLIPProcessor.from_pretrained(CLIP_MODEL_ID)
+        return self
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        if self.lpips_model is not None:
+            _release_model(self.lpips_model, self.device)
+        if self.clip_model is not None:
+            _release_model(self.clip_model, self.device)
+        self.lpips_model = None
+        self.clip_model = None
+        self.clip_processor = None
+
+    def evaluate(self, baseline_image, dynamic_image, prompt: str) -> dict:
+        if self.lpips_model is None or self.clip_model is None:
+            raise RuntimeError("QualityEvaluator must be used as a context manager")
+
+        from skimage.metrics import peak_signal_noise_ratio, structural_similarity
+
+        started = time.perf_counter()
+        baseline = _as_rgb_array(baseline_image)
+        dynamic = _as_rgb_array(dynamic_image)
+        if baseline.shape != dynamic.shape:
+            raise ValueError(
+                "Quality comparison needs equal image sizes: "
+                f"{baseline.shape} != {dynamic.shape}"
+            )
+
+        psnr = peak_signal_noise_ratio(baseline, dynamic, data_range=1.0)
+        ssim = structural_similarity(
+            baseline,
+            dynamic,
+            channel_axis=2,
+            data_range=1.0,
         )
 
-    psnr = peak_signal_noise_ratio(baseline, dynamic, data_range=1.0)
-    ssim = structural_similarity(
-        baseline,
-        dynamic,
-        channel_axis=2,
-        data_range=1.0,
-    )
+        with torch.inference_mode():
+            lpips_distance = self.lpips_model(
+                _lpips_tensor(baseline_image, self.device),
+                _lpips_tensor(dynamic_image, self.device),
+            ).item()
 
-    import lpips
+        inputs = self.clip_processor(
+            text=[prompt],
+            images=[baseline_image, dynamic_image],
+            return_tensors="pt",
+            padding=True,
+        )
+        inputs = {name: value.to(self.device) for name, value in inputs.items()}
+        with torch.inference_mode():
+            outputs = self.clip_model(**inputs)
+            clip_scores = (
+                outputs.image_embeds @ outputs.text_embeds.transpose(0, 1)
+            ).squeeze(1) * 100.0
+        baseline_clip, dynamic_clip = clip_scores.float().cpu().tolist()
 
-    lpips_model = lpips.LPIPS(net="alex").to(device).eval()
-    with torch.inference_mode():
-        lpips_distance = lpips_model(
-            _lpips_tensor(baseline_image, device),
-            _lpips_tensor(dynamic_image, device),
-        ).item()
-    _release_model(lpips_model, device)
-    del lpips_model
+        return {
+            "psnr_dynamic_vs_baseline_db": float(psnr),
+            "ssim_dynamic_vs_baseline": float(ssim),
+            "lpips_dynamic_vs_baseline": float(lpips_distance),
+            "clip_score_baseline": float(baseline_clip),
+            "clip_score_dynamic": float(dynamic_clip),
+            "clip_score_delta_dynamic_minus_baseline": float(
+                dynamic_clip - baseline_clip
+            ),
+            "evaluation_seconds": time.perf_counter() - started,
+            "metric_direction": {
+                "psnr": "higher is better",
+                "ssim": "higher is better",
+                "lpips": "lower is better",
+                "clip_score": "higher is better",
+            },
+            "clip_model": CLIP_MODEL_ID,
+        }
 
-    from transformers import CLIPModel, CLIPProcessor
 
-    clip_model = CLIPModel.from_pretrained(CLIP_MODEL_ID).to(device).eval()
-    clip_processor = CLIPProcessor.from_pretrained(CLIP_MODEL_ID)
-    inputs = clip_processor(
-        text=[prompt],
-        images=[baseline_image, dynamic_image],
-        return_tensors="pt",
-        padding=True,
-    )
-    inputs = {name: value.to(device) for name, value in inputs.items()}
-    with torch.inference_mode():
-        outputs = clip_model(**inputs)
-        clip_scores = (
-            outputs.image_embeds @ outputs.text_embeds.transpose(0, 1)
-        ).squeeze(1) * 100.0
-    baseline_clip, dynamic_clip = clip_scores.float().cpu().tolist()
-    _release_model(clip_model, device)
-    del clip_model
-
-    return {
-        "psnr_dynamic_vs_baseline_db": float(psnr),
-        "ssim_dynamic_vs_baseline": float(ssim),
-        "lpips_dynamic_vs_baseline": float(lpips_distance),
-        "clip_score_baseline": float(baseline_clip),
-        "clip_score_dynamic": float(dynamic_clip),
-        "clip_score_delta_dynamic_minus_baseline": float(
-            dynamic_clip - baseline_clip
-        ),
-        "evaluation_seconds": time.perf_counter() - started,
-        "metric_direction": {
-            "psnr": "higher is better",
-            "ssim": "higher is better",
-            "lpips": "lower is better",
-            "clip_score": "higher is better",
-        },
-        "clip_model": CLIP_MODEL_ID,
-    }
+def evaluate_quality(baseline_image, dynamic_image, prompt: str, device: str) -> dict:
+    """Calculate metrics for one pair while preserving the original API."""
+    with QualityEvaluator(device) as evaluator:
+        return evaluator.evaluate(baseline_image, dynamic_image, prompt)
 
 
 def main() -> None:

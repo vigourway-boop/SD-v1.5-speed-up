@@ -1,6 +1,7 @@
 import socket
 import threading
 import unittest
+from unittest import mock
 
 import torch
 
@@ -106,6 +107,25 @@ class FakePynqServer(threading.Thread):
 
 
 class PynqProtocolTest(unittest.TestCase):
+    def test_connect_with_retry_reports_successful_attempt(self):
+        client = PynqCosineClient("127.0.0.1", 9000)
+        with mock.patch.object(
+            client,
+            "connect",
+            side_effect=[ConnectionError("not ready"), None],
+        ) as connect:
+            attempt = client.connect_with_retry(attempts=2, delay_seconds=0.0)
+
+        self.assertEqual(attempt, 2)
+        self.assertEqual(connect.call_count, 2)
+
+    def test_connect_with_retry_validates_settings(self):
+        client = PynqCosineClient("127.0.0.1", 9000)
+        with self.assertRaises(ValueError):
+            client.connect_with_retry(attempts=0)
+        with self.assertRaises(ValueError):
+            client.connect_with_retry(delay_seconds=-1.0)
+
     def test_cfg_feature_is_reduced_and_sent(self):
         server = FakePynqServer()
         server.start()

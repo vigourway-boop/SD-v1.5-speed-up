@@ -35,6 +35,11 @@ WARMUP_STEPS = 15
 DPS_ENABLED = True
 SIMILARITY_THRESHOLD = 0.999
 MAX_CONSECUTIVE_SKIPS = 3
+SKIP_PREDICTOR_MODE = os.environ.get("SD_SKIP_PREDICTOR", "linear").lower()
+SKIP_PREDICTOR_DAMPING = float(os.environ.get("SD_SKIP_PREDICTOR_DAMPING", "0.5"))
+SKIP_PREDICTOR_MAX_FACTOR = float(
+    os.environ.get("SD_SKIP_PREDICTOR_MAX_FACTOR", "1.5")
+)
 
 # Dynamic threshold schedule derived from eight fixed-threshold CSK3 runs.
 DYNAMIC_THRESHOLD_ENABLED = os.environ.get(
@@ -52,6 +57,9 @@ DISTANCE_THRESHOLD = float(os.environ.get("SD_DISTANCE_THRESHOLD", "2.0"))
 # PYNQ-Z2 network service. Environment variables can override these defaults.
 PYNQ_HOST = os.environ.get("PYNQ_HOST", "192.168.2.99")
 PYNQ_PORT = int(os.environ.get("PYNQ_PORT", "9000"))
+PYNQ_CONNECT_ATTEMPTS = int(os.environ.get("PYNQ_CONNECT_ATTEMPTS", "5"))
+PYNQ_RETRY_DELAY_SECONDS = float(os.environ.get("PYNQ_RETRY_DELAY_SECONDS", "2"))
+PYNQ_GENERATION_RETRIES = int(os.environ.get("PYNQ_GENERATION_RETRIES", "1"))
 
 
 def sync():
