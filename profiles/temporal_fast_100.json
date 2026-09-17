@@ -1,0 +1,19 @@
+{
+  "name": "temporal_fast_100",
+  "profile": {
+    "middle_threshold": 0.9985,
+    "late_margin": 0.0012,
+    "late_min": 0.998,
+    "late_max": 0.9988,
+    "warmup_ratio": 0.15,
+    "max_consecutive_skips": 3,
+    "distance_threshold": 0.001431433537746502,
+    "predictor_damping": 0.5
+  },
+  "primary_steps": 100,
+  "resolution": [512, 512],
+  "scheduler": "DPMSolverMultistepScheduler",
+  "evaluation_directory": "experiments/temporal_evaluation_20260914_v2",
+  "selection": "Calibration only: fastest mean among candidates meeting predeclared diagnostic quality limits",
+  "note": "Opt-in profile. Quality and speed are prompt-dependent; see the evaluation report."
+}

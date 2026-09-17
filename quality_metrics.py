@@ -131,6 +131,10 @@ class QualityEvaluator:
             "clip_score_delta_dynamic_minus_baseline": float(
                 dynamic_clip - baseline_clip
             ),
+            "clip_score_scale": "100 * cosine; divide by 100 for raw cosine",
+            "clip_cosine_delta_dynamic_minus_baseline": float(
+                (dynamic_clip - baseline_clip) / 100.0
+            ),
             "evaluation_seconds": time.perf_counter() - started,
             "metric_direction": {
                 "psnr": "higher is better",

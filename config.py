@@ -53,6 +53,7 @@ LATE_THRESHOLD_MIN = 0.99945
 LATE_THRESHOLD_MAX = 0.99965
 THRESHOLD_EMA_ALPHA = 0.20
 DISTANCE_THRESHOLD = float(os.environ.get("SD_DISTANCE_THRESHOLD", "2.0"))
+DECISION_BACKEND = os.environ.get("SD_DECISION_BACKEND", "auto").lower()
 
 # PYNQ-Z2 network service. Environment variables can override these defaults.
 PYNQ_HOST = os.environ.get("PYNQ_HOST", "192.168.2.99")
@@ -80,7 +81,7 @@ def create_pipe(use_dpm_solver: bool = True):
     pipeline = StableDiffusionPipeline.from_pretrained(
         MODEL_ID,
         torch_dtype=torch.float16 if DEVICE == "cuda" else torch.float32,
-        local_files_only=False,
+        local_files_only=os.environ.get("HF_HUB_OFFLINE", "").lower() in {"1", "true", "yes"},
         resume_download=True,
         use_safetensors=True,
         safety_checker=None,

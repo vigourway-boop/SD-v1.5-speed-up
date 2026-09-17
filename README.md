@@ -1,8 +1,16 @@
 # SD-v1.5 Speed-up with PYNQ-Z2
 
+当前使用入口：`run_project.cmd`（先选择模式：`1` 默认加速、`2` 快速策略，回车默认选 `1`；再检查环境并生成原始/动态两张图片）。直接选择可使用 `run_project.cmd --mode 1` 或 `run_project.cmd --mode 2`。只检查使用 `run_project.cmd --check-only`，不会显示菜单。新手操作见 [使用说明](docs/BEGINNER_GUIDE.md)，系统数据流、代码位置和验收边界见 [项目技术说明](docs/PROJECT_OVERVIEW.md)。
+
+只想日常生成一张图：`run_standard_sd.cmd`，默认普通DPM-Solver 30步，无需PYNQ；追加 `--steps 20` 或 `--steps 50` 可比较常用步数。动态实验可显式加载快速 `profiles/temporal_fast_100.json` 或保守 `profiles/temporal_conservative_100.json`；保守方案本轮平均1.95倍，不能宣称达到2倍。
+
+**性能口径：** SD1.5常用20～50步，DPM-Solver应优先测试20～30步；本项目约2.5倍结果是相对原始100步，不能表述为相对常用20步方案的2.5倍。更多步数不保证更好的图片，100步参考图不是画质真值。
+
 基于时间步特征余弦相似度和归一化特征距离的 Stable Diffusion 1.5 动态跳步加速项目。
 
-Stable Diffusion 的 CLIP、UNet、Scheduler 和 VAE 在 PC GPU 上运行。PC 每个扩散时间步先去除重复 CFG batch，执行 `2x2` 平均池化，再将 latent 特征量化为 int8 并通过以太网发送给 PYNQ-Z2。PYNQ ARM 维护三阶段动态阈值、相邻步余弦 EMA 和参数状态。FPGA 使用片上 BRAM 保存参考特征，并完成点积、范数、余弦阈值、归一化距离阈值、warmup、连续跳步限制和参考更新。跳步时 PC 默认用最近两次真实 UNet 输出进行阻尼线性外推，不再直接原样复用上一结果。
+多提示词调参、独立验证、原始50步对照、不同步数扫描与软硬件一致性实验见 [时间步相似性实验说明](TEMPORAL_EVALUATION.md)。运行 `python temporal_evaluation.py --backend pynq` 可执行完整批次；电脑模式使用 `--backend pc`。
+
+Stable Diffusion 的 CLIP、UNet、Scheduler 和 VAE 在 PC GPU 上运行。PC 每个扩散时间步先去除重复 CFG batch，执行 `2x2` 平均池化，再将 latent 特征量化为 int8 并通过以太网发送给 PYNQ-Z2。PYNQ ARM 维护三阶段动态阈值、相邻步余弦 EMA 和参数状态。FPGA 使用片上 BRAM 保存参考特征，并完成点积、范数、余弦阈值、归一化距离阈值、warmup、连续跳步限制和参考更新。没有板卡时，可由 PC 后备控制器执行等价判断。跳步时 PC 默认用最近两次真实 UNet 输出进行阻尼线性外推，不再直接原样复用上一结果。
 
 ```mermaid
 flowchart LR
@@ -102,7 +110,7 @@ FPGA 使用 Q20 阈值交叉相乘，不执行除法。默认 `SD_DISTANCE_THRES
 ## 目录
 
 ```text
-combined_speed_test.py       一键 baseline + PYNQ 动态生成与评估
+combined_speed_test.py       一键 baseline + PYNQ/PC 动态生成与评估
 config.py                    模型、提示词、随机种子和跳步参数
 dynamic_threshold.py         三阶段动态阈值和在线 EMA 控制器
 skip_predictor.py            双历史 UNet 阻尼线性跳步预测器
@@ -163,12 +171,32 @@ deploy_pynq_server.cmd 192.168.2.99 xilinx
 run_pynq_speedup.cmd 192.168.2.99
 ```
 
+默认决策后端为 `auto`：程序优先连接 PYNQ-Z2；如果板卡未开机、未连接或服务不可达，会明确提示并自动切换到 PC CPU，继续完成 Baseline 和 Dynamic 图片生成。PC 后备控制器使用相同的 int8 下采样特征、三阶段动态阈值、Q15/Q20 整数比较、连续跳步限制和参考更新规则。
+
+```bat
+set SD_DECISION_BACKEND=auto
+run_pynq_speedup.cmd 192.168.2.99
+```
+
+也可以显式选择后端：
+
+```bat
+python combined_speed_test.py --with-baseline --decision-backend pc
+python combined_speed_test.py --with-baseline --decision-backend pynq --pynq-host 192.168.2.99
+```
+
+- `auto`：优先 PYNQ，不可用时自动使用 PC，适合日常生成。
+- `pc`：不连接板卡，直接在 PC CPU 上完成动态阈值、余弦、距离和跳步判断。
+- `pynq`：强制使用 PYNQ，连接失败立即报错，适合正式 FPGA 性能实验。
+
+PC 后备模式只能验证生成和跳步算法，不能作为 FPGA 加速、网络耗时或 PYNQ 功耗的实验数据。`summary.json` 和 HTML 报告会记录请求后端、实际后端、是否发生后备切换及各计算位置，避免混淆 PC 与硬件结果。
+
 每次运行都会使用一个新的随机种子；同一次运行中的 baseline 和 dynamic 使用相同种子，以保证比较公平。输出目录格式为：
 
 ```text
 experiments/YYYYMMDD_HHMMSS_seed_<seed>/
   baseline.png
-  pynq_dynamic.png
+  dynamic.png
   step_metrics.csv
   timing_summary.csv
   summary.json
@@ -176,13 +204,13 @@ experiments/YYYYMMDD_HHMMSS_seed_<seed>/
   report.html
 ```
 
-`step_metrics.csv` 每个扩散时间步一行，包含余弦相似度、归一化距离、两个通过标志、板端请求阈值、Q1.15/Q20 编码、阈值阶段、在线 EMA、跳步结果、预测模式、线性外推系数、预测耗时、量化时间、网络往返时间、FPGA kernel 时间、UNet 时间和 Scheduler 时间。第一步还没有参考向量，因此 similarity 和 normalized_distance 为 `NaN`。
+`step_metrics.csv` 每个扩散时间步一行，包含实际决策后端、余弦相似度、归一化距离、两个通过标志、请求阈值、Q1.15/Q20 编码、阈值阶段、在线 EMA、跳步结果、预测模式、线性外推系数、预测耗时、量化时间、决策时间、UNet 时间和 Scheduler 时间。PYNQ 模式还记录网络往返、ARM 服务和 FPGA kernel 时间；PC 模式中这些硬件字段为 `0`。第一步还没有参考向量，因此 similarity 和 normalized_distance 为 `NaN`。
 
-`timing_summary.csv` 是面向阅读的中英双语耗时表，使用 Windows Excel 可直接识别的 UTF-8 BOM 编码。表中包含模型加载、预热、Baseline 总生成、Dynamic 总生成、文本编码器、latent 初始化、扩散循环、UNet、跳步预测、Scheduler、PYNQ 特征准备、网络往返、FPGA kernel、PYNQ 服务端、VAE、图片保存和质量评估。生成总耗时包含特征压缩、网络传输和 FPGA 判断；质量评估和 PNG 保存单独列出，不计入加速比。网络往返包含 PYNQ 服务端与 FPGA 时间，因此总计与子项不能重复相加。相同数据也写入 `summary.json` 的 `timing_ms` 字段。
+`timing_summary.csv` 是面向阅读的中英双语耗时表，使用 Windows Excel 可直接识别的 UTF-8 BOM 编码。表中包含模型加载、预热、Baseline 总生成、Dynamic 总生成、文本编码器、latent 初始化、扩散循环、UNet、跳步预测、Scheduler、决策特征准备、决策后端、网络往返、FPGA kernel、VAE、图片保存和质量评估。生成总耗时包含实际后端的特征压缩和跳步判断；质量评估和 PNG 保存单独列出，不计入加速比。PYNQ 模式的网络往返包含 ARM 服务与 FPGA 时间，因此总计与子项不能重复相加。相同数据也写入 `summary.json` 的 `timing_ms` 字段。
 
 `report.html` 是每次实验自动生成的离线中英双语报告。直接双击即可查看两张图片、加速比、质量指标、耗时表、跳步分布、相似度/阈值曲线、预测器参数和断线恢复次数，不依赖网络或额外网页服务。
 
-程序启动时会先用 CSK4 `PING` 检查板卡服务，默认最多连接 5 次、每次间隔 2 秒。Dynamic 运行中断线时不会重复发送状态不确定的单个 STEP，而是重新连接、重置 FPGA，并用相同随机种子从头重跑整轮 Dynamic。默认允许 1 次整轮恢复；PYNQ 上的 systemd 服务已配置为板卡重启后自动启动和异常退出后自动重启。
+程序在 `auto` 或 `pynq` 模式下会先用 CSK4 `PING` 检查板卡服务，默认最多连接 5 次、每次间隔 2 秒。Dynamic 运行中断线时不会重复发送状态不确定的单个 STEP，而是用相同随机种子从头重跑整轮 Dynamic；`auto` 模式在重连仍失败时会改用 PC 后备控制器。默认允许 1 次整轮恢复；PYNQ 上的 systemd 服务已配置为板卡重启后自动启动和异常退出后自动重启。
 
 需要复现实验种子或临时回到固定阈值时，可以在当前 CMD 中设置：
 
@@ -192,7 +220,7 @@ set SD_DYNAMIC_THRESHOLD=0
 set SD_DISTANCE_THRESHOLD=2.0
 ```
 
-默认 `SD_DYNAMIC_THRESHOLD=1`。CSK4 动态阈值在 PYNQ ARM 上计算，余弦和距离比较在 FPGA 上完成，因此必须配套部署本分支生成的 CSK4 bit/hwh 和板端服务。
+默认 `SD_DYNAMIC_THRESHOLD=1`。PYNQ 模式下，CSK4 动态阈值在 PYNQ ARM 上计算，余弦和距离比较在 FPGA 上完成，因此必须配套部署本分支生成的 CSK4 bit/hwh 和板端服务；PC 模式不需要这些硬件文件。
 
 默认跳步预测器为 `linear`，阻尼系数 `0.5`，最大外推系数 `1.5`。需要与旧版“直接复用上一个 UNet 输出”做 A/B 对照时使用：
 
@@ -227,7 +255,7 @@ D:\lenovo\download\conda\envs\sd_accel\python.exe combined_speed_test.py --with-
 本地协议测试：
 
 ```bat
-python -m unittest -v test_config.py test_timing_summary.py test_skip_predictor.py test_experiment_report.py test_network_recovery.py test_predictor_batch.py test_dynamic_threshold.py test_pynq_protocol.py
+python -m unittest -v test_config.py test_timing_summary.py test_skip_predictor.py test_pc_skip_controller.py test_experiment_report.py test_network_recovery.py test_predictor_batch.py test_dynamic_threshold.py test_pynq_protocol.py
 ```
 
 真实 FPGA 测试：
@@ -249,4 +277,4 @@ D:\path\to\Vivado\2022.2\bin\vivado.bat -mode batch -source pynq_cosine_overlay\
 
 ## 限制
 
-PYNQ-Z2 负责动态阈值状态、压缩特征统计和完整跳步控制。完整 CLIP、UNet 和 VAE 的参数量及带宽需求远超 Zynq-7020 的资源，因此仍由 PC GPU 执行。当前距离阈值 `2.0` 只用于采集和兼容；校准已证明单一全局距离阈值不能避免所有种子的轨迹退化。正式性能结论还必须覆盖更多随机种子、不同提示词和场景。
+PYNQ 模式由 PYNQ-Z2 负责动态阈值状态、压缩特征统计和完整跳步控制；PC 模式只用于无板卡生成、算法调试和软件对照。完整 CLIP、UNet 和 VAE 的参数量及带宽需求远超 Zynq-7020 的资源，因此始终由 PC GPU 执行。当前距离阈值 `2.0` 只用于采集和兼容；校准已证明单一全局距离阈值不能避免所有种子的轨迹退化。正式 FPGA 性能结论必须使用强制 `pynq` 模式，并覆盖更多随机种子、不同提示词和场景。

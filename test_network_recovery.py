@@ -24,7 +24,9 @@ class DynamicRecoveryTest(unittest.TestCase):
         with mock.patch(
             "combined_speed_test.run_with_dynamic_steps",
             side_effect=[ConnectionError("link lost"), completed],
-        ) as dynamic_run:
+        ) as dynamic_run, mock.patch(
+            "combined_speed_test.time.perf_counter", side_effect=[0.0, 1.0, 4.0, 4.0, 5.0]
+        ):
             result = run_dynamic_with_recovery(
                 "output.png",
                 client,
@@ -40,7 +42,10 @@ class DynamicRecoveryTest(unittest.TestCase):
         self.assertEqual(dynamic_run.call_count, 2)
         self.assertEqual(client.connect_calls, 2)
         self.assertEqual(client.close_calls, 1)
-        self.assertEqual(result[:-1], completed)
+        self.assertEqual(result[0], 10.0)
+        self.assertEqual(result[1:5], completed[1:5])
+        self.assertEqual(result[5]["generation_ms"], 10000.0)
+        self.assertEqual(result[5]["recovery_overhead_ms"], 5000.0)
         self.assertEqual(result[-1], 1)
 
     def test_failure_is_raised_after_retry_budget_is_exhausted(self):
@@ -65,4 +70,3 @@ class DynamicRecoveryTest(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
-

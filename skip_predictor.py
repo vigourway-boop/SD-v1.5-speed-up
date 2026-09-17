@@ -37,6 +37,10 @@ class SkipNoisePredictor:
         if len(self._history) > 2:
             self._history.pop(0)
 
+    @property
+    def cache_bytes(self):
+        return sum(value.numel() * value.element_size() for _, value in self._history)
+
     def predict(self, timestep):
         if not self._history:
             raise RuntimeError("Cannot predict before a real UNet output is recorded")
@@ -58,4 +62,3 @@ class SkipNoisePredictor:
 
         predicted = last_prediction + factor * (last_prediction - previous_prediction)
         return SkipPrediction(predicted, "linear", factor)
-

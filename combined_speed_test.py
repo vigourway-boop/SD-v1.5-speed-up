@@ -10,8 +10,10 @@ from pathlib import Path
 import torch
 
 from config import *
+from controller_profile import load_controller_profile, profile_globals
+from decision_backend import create_decision_client
 from experiment_report import generate_experiment_report
-from pynq_cosine_client import FEATURE_DOWNSAMPLE_FACTOR, PynqCosineClient
+from pynq_cosine_client import FEATURE_DOWNSAMPLE_FACTOR
 from skip_predictor import SkipNoisePredictor
 
 
@@ -35,7 +37,11 @@ STEP_FIELDS = [
     "action",
     "skip_streak",
     "feature_bytes",
+    "decision_backend",
     "prepare_ms",
+    "decision_ms",
+    "decision_total_ms",
+    "pc_controller_ms",
     "pynq_total_ms",
     "kernel_ms",
     "server_ms",
@@ -58,6 +64,8 @@ TIMING_FIELDS = [
 def run_original_steps(num_steps, filename):
     print(f"\n=== Baseline: {num_steps} UNet steps ===")
     sync()
+    if DEVICE == "cuda":
+        torch.cuda.reset_peak_memory_stats()
     started = time.perf_counter()
     image = pipe(
         PROMPT,
@@ -75,6 +83,12 @@ def run_original_steps(num_steps, filename):
     return elapsed, image, {
         "generation_ms": elapsed * 1000.0,
         "image_save_ms": save_ms,
+        "cuda_peak_allocated_bytes": (
+            torch.cuda.max_memory_allocated() if DEVICE == "cuda" else 0
+        ),
+        "cuda_peak_reserved_bytes": (
+            torch.cuda.max_memory_reserved() if DEVICE == "cuda" else 0
+        ),
     }
 
 
@@ -86,9 +100,12 @@ def run_with_dynamic_steps(
     predictor_damping,
     predictor_max_factor,
 ):
-    """Run SD while PYNQ makes every cosine-based skip decision."""
-    print("\n=== Dynamic diffusion with PYNQ-Z2 decisions ===")
+    """Run SD while the selected backend makes every skip decision."""
 
+    sync()
+    if DEVICE == "cuda":
+        torch.cuda.reset_peak_memory_stats()
+    started = time.perf_counter()
     pynq_client.reset()
     pynq_client.configure(
         enabled=DYNAMIC_THRESHOLD_ENABLED,
@@ -105,8 +122,11 @@ def run_with_dynamic_steps(
         ema_alpha=THRESHOLD_EMA_ALPHA,
         distance_threshold=distance_threshold,
     )
+    backend_name = pynq_client.backend_name
+    backend_display = pynq_client.backend_display_name
+    print(f"\n=== Dynamic diffusion with {backend_display} decisions ===")
     sync()
-    started = time.perf_counter()
+    controller_setup_ms = (time.perf_counter() - started) * 1000.0
 
     text_started = time.perf_counter()
     text_inputs = pipe.tokenizer(
@@ -159,13 +179,13 @@ def run_with_dynamic_steps(
             "n/a" if math.isnan(decision.similarity) else f"{decision.similarity:.6f}"
         )
         print(
-            f"[PYNQ] step {step_index + 1:03d}/{BASE_STEPS}: {action} "
+            f"[{backend_name.upper()}] step {step_index + 1:03d}/{BASE_STEPS}: {action} "
             f"similarity={similarity_text} "
             f"distance={decision.normalized_distance:.6f} "
             f"threshold={decision.effective_threshold:.6f} "
             f"phase={decision.threshold_phase} "
             f"kernel={decision.kernel_ms:.3f} ms "
-            f"round-trip={decision.round_trip_ms:.3f} ms"
+            f"decision={decision.decision_ms:.3f} ms"
         )
 
         unet_ms = 0.0
@@ -228,8 +248,18 @@ def run_with_dynamic_steps(
                 "action": action,
                 "skip_streak": skip_streak,
                 "feature_bytes": decision.feature_bytes,
+                "decision_backend": backend_name,
                 "prepare_ms": decision.prepare_ms,
-                "pynq_total_ms": decision.prepare_ms + decision.round_trip_ms,
+                "decision_ms": decision.decision_ms,
+                "decision_total_ms": decision.prepare_ms + decision.decision_ms,
+                "pc_controller_ms": (
+                    decision.decision_ms if backend_name == "pc" else 0.0
+                ),
+                "pynq_total_ms": (
+                    decision.prepare_ms + decision.decision_ms
+                    if backend_name == "pynq"
+                    else 0.0
+                ),
                 "kernel_ms": decision.kernel_ms,
                 "server_ms": decision.server_ms,
                 "round_trip_ms": decision.round_trip_ms,
@@ -263,6 +293,11 @@ def run_with_dynamic_steps(
     save_started = time.perf_counter()
     image.save(filename)
     image_save_ms = (time.perf_counter() - save_started) * 1000.0
+    average_decision_ms = (
+        sum(row["decision_ms"] for row in step_rows) / len(step_rows)
+        if step_rows
+        else 0.0
+    )
     average_network_ms = (
         pynq_client.total_round_trip_ms / pynq_client.step_calls
         if pynq_client.step_calls
@@ -272,16 +307,39 @@ def run_with_dynamic_steps(
     unet_total_ms = sum(row["unet_ms"] for row in step_rows)
     scheduler_total_ms = sum(row["scheduler_ms"] for row in step_rows)
     prediction_total_ms = sum(row["prediction_ms"] for row in step_rows)
+    decision_total_ms = sum(row["decision_total_ms"] for row in step_rows)
     pynq_total_ms = sum(row["pynq_total_ms"] for row in step_rows)
+    pc_controller_ms = sum(row["pc_controller_ms"] for row in step_rows)
     timing = {
+        "decision_backend": backend_name,
         "generation_ms": elapsed * 1000.0,
+        "controller_setup_ms": controller_setup_ms,
+        "cuda_peak_allocated_bytes": (
+            torch.cuda.max_memory_allocated() if DEVICE == "cuda" else 0
+        ),
+        "cuda_peak_reserved_bytes": (
+            torch.cuda.max_memory_reserved() if DEVICE == "cuda" else 0
+        ),
+        "predictor_cache_bytes": predictor.cache_bytes,
         "text_encoder_ms": text_encoder_ms,
         "latent_init_ms": latent_init_ms,
         "diffusion_loop_ms": diffusion_loop_ms,
         "unet_ms": unet_total_ms,
         "scheduler_ms": scheduler_total_ms,
         "skip_prediction_ms": prediction_total_ms,
-        "pynq_feature_prepare_ms": sum(row["prepare_ms"] for row in step_rows),
+        "decision_feature_prepare_ms": sum(row["prepare_ms"] for row in step_rows),
+        "decision_total_ms": decision_total_ms,
+        "decision_backend_compute_ms": (
+            pc_controller_ms
+            if backend_name == "pc"
+            else sum(row["server_ms"] for row in step_rows)
+        ),
+        "pc_controller_ms": pc_controller_ms,
+        "pynq_feature_prepare_ms": (
+            sum(row["prepare_ms"] for row in step_rows)
+            if backend_name == "pynq"
+            else 0.0
+        ),
         "pynq_total_ms": pynq_total_ms,
         "network_round_trip_ms": sum(row["round_trip_ms"] for row in step_rows),
         "fpga_kernel_ms": sum(row["kernel_ms"] for row in step_rows),
@@ -291,7 +349,7 @@ def run_with_dynamic_steps(
             diffusion_loop_ms
             - unet_total_ms
             - scheduler_total_ms
-            - pynq_total_ms
+            - decision_total_ms
             - prediction_total_ms,
         ),
         "vae_ms": vae_ms,
@@ -302,9 +360,12 @@ def run_with_dynamic_steps(
         f"elapsed={elapsed:.2f} s"
     )
     print(
-        f"PYNQ feature traffic={pynq_client.total_bytes_sent / 1024:.1f} KiB, "
-        f"average round-trip={average_network_ms:.3f} ms"
+        f"Decision backend={backend_display}, "
+        f"processed features={pynq_client.total_bytes_sent / 1024:.1f} KiB, "
+        f"average decision={average_decision_ms:.3f} ms"
     )
+    if backend_name == "pynq":
+        print(f"Average PYNQ network round-trip={average_network_ms:.3f} ms")
     print(f"Image saved to: {filename}")
     return elapsed, executed_steps, skipped_steps, image, step_rows, timing
 
@@ -320,15 +381,18 @@ def run_dynamic_with_recovery(
     connect_attempts,
     retry_delay_seconds,
 ):
-    """Restart the deterministic dynamic run after a connection failure."""
+    """Restart the deterministic dynamic run after a backend connection failure."""
+    recovery_overhead_seconds = 0.0
     for recovery_attempt in range(generation_retries + 1):
+        attempt_started = time.perf_counter()
         try:
             connection_attempt = pynq_client.connect_with_retry(
                 attempts=connect_attempts,
                 delay_seconds=retry_delay_seconds,
             )
+            connected_at = time.perf_counter()
             if connection_attempt > 1:
-                print(f"PYNQ connected on attempt {connection_attempt}.")
+                print(f"Decision backend connected on attempt {connection_attempt}.")
             result = run_with_dynamic_steps(
                 filename,
                 pynq_client,
@@ -337,16 +401,24 @@ def run_dynamic_with_recovery(
                 predictor_damping,
                 predictor_max_factor,
             )
+            if recovery_attempt:
+                overhead = recovery_overhead_seconds + connected_at - attempt_started
+                elapsed, executed, skipped, image, rows, timing = result
+                timing = dict(timing)
+                timing["recovery_overhead_ms"] = overhead * 1000.0
+                timing["generation_ms"] += overhead * 1000.0
+                result = (elapsed + overhead, executed, skipped, image, rows, timing)
             return (*result, recovery_attempt)
         except ConnectionError as exc:
             pynq_client.close()
             if recovery_attempt >= generation_retries:
                 raise
             print(
-                "PYNQ connection was interrupted. Restarting the complete "
+                "Decision backend connection was interrupted. Restarting the complete "
                 f"Dynamic run ({recovery_attempt + 1}/{generation_retries}): {exc}"
             )
             time.sleep(retry_delay_seconds)
+            recovery_overhead_seconds += time.perf_counter() - attempt_started
 
     raise RuntimeError("Dynamic recovery loop exited unexpectedly")
 
@@ -401,6 +473,17 @@ def write_timing_summary(path, rows):
 
 def build_timing_rows(model_load_ms, warmup_ms, baseline_timing, dynamic_timing,
                       quality_evaluation_ms):
+    backend = dynamic_timing.get("decision_backend", "pynq")
+    backend_label = "PYNQ-Z2/FPGA" if backend == "pynq" else "PC CPU"
+    decision_prepare_ms = dynamic_timing.get(
+        "decision_feature_prepare_ms", dynamic_timing["pynq_feature_prepare_ms"]
+    )
+    decision_total_ms = dynamic_timing.get(
+        "decision_total_ms", dynamic_timing["pynq_total_ms"]
+    )
+    decision_compute_ms = dynamic_timing.get(
+        "decision_backend_compute_ms", dynamic_timing["pynq_server_ms"]
+    )
     rows = [
         {
             "阶段 / Stage": "模型加载 / Model loading",
@@ -418,13 +501,13 @@ def build_timing_rows(model_load_ms, warmup_ms, baseline_timing, dynamic_timing,
             "阶段 / Stage": "Baseline 扩散生成 / Baseline diffusion",
             "耗时（ms） / Time (ms)": baseline_timing["generation_ms"],
             "计入生成总耗时 / Included in generation total": "是 / Yes",
-            "说明 / Notes": "100 个完整 UNet 时间步",
+            "说明 / Notes": f"{BASE_STEPS} 个完整 UNet 时间步",
         },
         {
             "阶段 / Stage": "Dynamic 总生成 / Dynamic generation total",
             "耗时（ms） / Time (ms)": dynamic_timing["generation_ms"],
             "计入生成总耗时 / Included in generation total": "是 / Yes",
-            "说明 / Notes": "包含特征处理、传输、FPGA 和扩散过程",
+            "说明 / Notes": f"包含 {backend_label} 跳步判断和扩散过程",
         },
         {
             "阶段 / Stage": "文本编码器 / Text encoder",
@@ -448,7 +531,7 @@ def build_timing_rows(model_load_ms, warmup_ms, baseline_timing, dynamic_timing,
             "阶段 / Stage": "扩散循环总计 / Diffusion loop total",
             "耗时（ms） / Time (ms)": dynamic_timing["diffusion_loop_ms"],
             "计入生成总耗时 / Included in generation total": "是 / Yes",
-            "说明 / Notes": "UNet、Scheduler、PYNQ 和循环开销的总计",
+            "说明 / Notes": "UNet、Scheduler、跳步决策和循环开销的总计",
         },
         {
             "阶段 / Stage": "Scheduler 更新 / Scheduler update",
@@ -463,16 +546,16 @@ def build_timing_rows(model_load_ms, warmup_ms, baseline_timing, dynamic_timing,
             "说明 / Notes": "双历史阻尼线性外推或旧值复用",
         },
         {
-            "阶段 / Stage": "PYNQ 特征准备 / PYNQ feature preparation",
-            "耗时（ms） / Time (ms)": dynamic_timing["pynq_feature_prepare_ms"],
+            "阶段 / Stage": "决策特征准备 / Decision feature preparation",
+            "耗时（ms） / Time (ms)": decision_prepare_ms,
             "计入生成总耗时 / Included in generation total": "是 / Yes",
             "说明 / Notes": "下采样和 int8 量化",
         },
         {
-            "阶段 / Stage": "PYNQ 总处理 / PYNQ total",
-            "耗时（ms） / Time (ms)": dynamic_timing["pynq_total_ms"],
+            "阶段 / Stage": "跳步决策总处理 / Skip decision total",
+            "耗时（ms） / Time (ms)": decision_total_ms,
             "计入生成总耗时 / Included in generation total": "是 / Yes",
-            "说明 / Notes": "特征准备与网络往返的总计",
+            "说明 / Notes": f"特征准备与 {backend_label} 判断的总计",
         },
         {
             "阶段 / Stage": "网络往返 / Network round-trip",
@@ -487,10 +570,10 @@ def build_timing_rows(model_load_ms, warmup_ms, baseline_timing, dynamic_timing,
             "说明 / Notes": "余弦、距离和跳步判断",
         },
         {
-            "阶段 / Stage": "PYNQ 服务端 / PYNQ server",
-            "耗时（ms） / Time (ms)": dynamic_timing["pynq_server_ms"],
+            "阶段 / Stage": "决策后端计算 / Decision backend compute",
+            "耗时（ms） / Time (ms)": decision_compute_ms,
             "计入生成总耗时 / Included in generation total": "是 / Yes",
-            "说明 / Notes": "ARM MMIO 和协议处理",
+            "说明 / Notes": f"{backend_label} 控制器计算；PYNQ 数值包含 FPGA 调用",
         },
         {
             "阶段 / Stage": "扩散循环其他开销 / Diffusion loop other",
@@ -523,6 +606,20 @@ def build_timing_rows(model_load_ms, warmup_ms, baseline_timing, dynamic_timing,
             "说明 / Notes": "PSNR、SSIM、LPIPS、CLIP",
         },
     ]
+    rows.extend([
+        {
+            "阶段 / Stage": "控制器初始化 / Controller setup",
+            "耗时（ms） / Time (ms)": dynamic_timing.get("controller_setup_ms", 0.0),
+            "计入生成总耗时 / Included in generation total": "是 / Yes",
+            "说明 / Notes": "重置与下发参数，属于Dynamic总耗时的一部分",
+        },
+        {
+            "阶段 / Stage": "断线恢复开销 / Recovery overhead",
+            "耗时（ms） / Time (ms)": dynamic_timing.get("recovery_overhead_ms", 0.0),
+            "计入生成总耗时 / Included in generation total": "是 / Yes",
+            "说明 / Notes": "失败尝试、等待和重新连接；无断线时为零",
+        },
+    ])
     return rows
 
 
@@ -551,13 +648,24 @@ def write_json(path, value):
 
 def parse_args():
     parser = argparse.ArgumentParser(
-        description="Stable Diffusion with PYNQ-Z2 cosine skip decisions"
+        description="Stable Diffusion with PYNQ-Z2 or PC cosine skip decisions"
+    )
+    parser.add_argument(
+        "--decision-backend",
+        choices=("auto", "pynq", "pc"),
+        default=DECISION_BACKEND,
+        help="auto prefers PYNQ and falls back to PC when the board is unavailable",
     )
     parser.add_argument("--pynq-host", default=PYNQ_HOST)
     parser.add_argument("--pynq-port", type=int, default=PYNQ_PORT)
     parser.add_argument("--seed", type=int, default=RUN_SEED)
+    parser.add_argument("--steps", type=int, default=BASE_STEPS)
+    parser.add_argument("--prompt", default=PROMPT)
+    parser.add_argument("--negative-prompt", default=NEGATIVE_PROMPT)
+    parser.add_argument("--controller-profile", type=Path,
+                        help="explicitly load a calibrated JSON profile; omission keeps existing settings")
     parser.add_argument(
-        "--distance-threshold", type=float, default=DISTANCE_THRESHOLD
+        "--distance-threshold", type=float, default=None
     )
     parser.add_argument(
         "--skip-predictor",
@@ -565,7 +673,7 @@ def parse_args():
         default=SKIP_PREDICTOR_MODE,
     )
     parser.add_argument(
-        "--predictor-damping", type=float, default=SKIP_PREDICTOR_DAMPING
+        "--predictor-damping", type=float, default=None
     )
     parser.add_argument(
         "--predictor-max-factor", type=float, default=SKIP_PREDICTOR_MAX_FACTOR
@@ -579,12 +687,12 @@ def parse_args():
     parser.add_argument(
         "--generation-retries", type=int, default=PYNQ_GENERATION_RETRIES
     )
-    parser.add_argument("--output", default="combo_step_dynamic_pynq.png")
+    parser.add_argument("--output", default="combo_step_dynamic.png")
     parser.add_argument("--experiment-root", default="experiments")
     parser.add_argument(
         "--with-baseline",
         action="store_true",
-        help="also generate a full-step baseline image before the PYNQ run",
+        help="also generate a full-step baseline image before the dynamic run",
     )
     parser.add_argument(
         "--skip-quality-eval",
@@ -596,8 +704,21 @@ def parse_args():
 
 
 def main():
-    global pipe, RUN_SEED
+    global pipe, RUN_SEED, BASE_STEPS, PROMPT, NEGATIVE_PROMPT, WARMUP_STEPS
     args = parse_args()
+    if not 2 <= args.steps <= 1000:
+        raise SystemExit("--steps must be between 2 and 1000")
+    BASE_STEPS, PROMPT, NEGATIVE_PROMPT = args.steps, args.prompt, args.negative_prompt
+    profile = None
+    if args.controller_profile:
+        profile = load_controller_profile(args.controller_profile)
+        globals().update(profile_globals(profile, BASE_STEPS))
+    else:
+        WARMUP_STEPS = min(WARMUP_STEPS, BASE_STEPS)
+    if args.distance_threshold is None:
+        args.distance_threshold = profile["distance_threshold"] if profile else DISTANCE_THRESHOLD
+    if args.predictor_damping is None:
+        args.predictor_damping = profile["predictor_damping"] if profile else SKIP_PREDICTOR_DAMPING
     if not 0 <= args.seed <= 0xFFFFFFFF:
         raise SystemExit("--seed must be between 0 and 4294967295")
     if not math.isfinite(args.distance_threshold) or not 0.0 <= args.distance_threshold <= 2.0:
@@ -615,14 +736,18 @@ def main():
     RUN_SEED = args.seed
     experiment_dir = create_experiment_directory(args.experiment_root)
     print("=" * 68)
-    print("Stable Diffusion + PYNQ-Z2 cosine skip control")
+    print("Stable Diffusion cosine skip control")
     print(f"Compute device: {DEVICE}")
     print(f"Random seed: {RUN_SEED}")
-    print(f"PYNQ server: {args.pynq_host}:{args.pynq_port}")
+    print(f"Decision backend requested: {args.decision_backend}")
+    if args.decision_backend != "pc":
+        print(f"PYNQ server: {args.pynq_host}:{args.pynq_port}")
     print(f"Experiment: {experiment_dir}")
     print("=" * 68)
 
-    client = PynqCosineClient(args.pynq_host, args.pynq_port)
+    client = create_decision_client(
+        args.decision_backend, args.pynq_host, args.pynq_port
+    )
     try:
         connection_attempt = client.connect_with_retry(
             attempts=args.connect_attempts,
@@ -630,15 +755,18 @@ def main():
         )
     except (ConnectionError, OSError) as exc:
         raise SystemExit(
-            "Cannot connect to the PYNQ cosine server. "
-            "Check the board IP and service status.\n"
+            "Cannot start the requested decision backend. "
+            "Use --decision-backend auto or pc when PYNQ-Z2 is unavailable.\n"
             f"Details: {exc}"
         ) from exc
 
-    print(
-        "PYNQ connection and CSK4 protocol check passed "
-        f"(attempt {connection_attempt}/{args.connect_attempts})."
-    )
+    if client.backend_name == "pynq":
+        print(
+            "PYNQ connection and CSK4 protocol check passed "
+            f"(attempt {connection_attempt}/{args.connect_attempts})."
+        )
+    else:
+        print("PC CPU skip controller is ready.")
     client.close()
 
     baseline_elapsed = None
@@ -662,12 +790,12 @@ def main():
                 BASE_STEPS, baseline_path
             )
             alias_save_started = time.perf_counter()
-            baseline_image.save("combo_step100_baseline.png")
+            baseline_image.save(f"combo_step{BASE_STEPS}_baseline.png")
             baseline_timing["image_save_ms"] += (
                 time.perf_counter() - alias_save_started
             ) * 1000.0
 
-        dynamic_path = experiment_dir / "pynq_dynamic.png"
+        dynamic_path = experiment_dir / "dynamic.png"
         (
             dynamic_elapsed,
             executed_steps,
@@ -705,9 +833,22 @@ def main():
             "prompt": PROMPT,
             "negative_prompt": NEGATIVE_PROMPT,
             "device": DEVICE,
+            "decision_backend_requested": args.decision_backend,
+            "decision_backend_used": client.backend_name,
+            "decision_backend_display_name": client.backend_display_name,
+            "decision_backend_fallback_used": bool(client.fallback_used),
+            "decision_backend_fallback_reason": client.fallback_reason,
             "pynq_host": args.pynq_host,
             "pynq_port": args.pynq_port,
             "base_steps": BASE_STEPS,
+            "controller_profile_file": str(args.controller_profile) if args.controller_profile else None,
+            "resources": {
+                "baseline_cuda_peak_allocated_bytes": baseline_timing.get("cuda_peak_allocated_bytes") if baseline_timing else None,
+                "dynamic_cuda_peak_allocated_bytes": dynamic_timing["cuda_peak_allocated_bytes"],
+                "dynamic_cuda_peak_reserved_bytes": dynamic_timing["cuda_peak_reserved_bytes"],
+                "predictor_cache_bytes": dynamic_timing["predictor_cache_bytes"],
+                "quantized_reference_bytes": max((r["feature_bytes"] for r in step_rows), default=0),
+            },
             "executed_unet_steps": executed_steps,
             "skipped_steps": skipped_steps,
             "similarity_threshold": (
@@ -746,20 +887,46 @@ def main():
             "baseline_seconds": baseline_elapsed,
             "dynamic_seconds": dynamic_elapsed,
             "speedup": speedup,
-            "pynq_feature_bytes": client.total_bytes_sent,
-            "pynq_feature_dtype": "int8",
-            "pynq_downsample_factor": FEATURE_DOWNSAMPLE_FACTOR,
-            "dynamic_threshold_controller_location": "PYNQ ARM",
-            "cosine_similarity_location": "FPGA",
-            "feature_distance_location": "FPGA",
-            "skip_controller_location": "FPGA",
+            "decision_feature_bytes": client.total_bytes_sent,
+            "decision_feature_dtype": "int8",
+            "decision_downsample_factor": FEATURE_DOWNSAMPLE_FACTOR,
+            "pynq_feature_bytes": (
+                client.total_bytes_sent if client.backend_name == "pynq" else 0
+            ),
+            "pynq_feature_dtype": (
+                "int8" if client.backend_name == "pynq" else None
+            ),
+            "pynq_downsample_factor": (
+                FEATURE_DOWNSAMPLE_FACTOR if client.backend_name == "pynq" else None
+            ),
+            "dynamic_threshold_controller_location": client.threshold_controller_location,
+            "cosine_similarity_location": client.cosine_location,
+            "feature_distance_location": client.distance_location,
+            "skip_controller_location": client.skip_controller_location,
             "skip_rule": "cosine_passed AND distance_passed",
             "average_round_trip_ms": (
                 client.total_round_trip_ms / client.step_calls
                 if client.step_calls
                 else 0.0
             ),
-            "pynq_quantization_transfer_and_fpga_included_in_dynamic_time": True,
+            "average_decision_ms": (
+                (
+                    dynamic_timing["decision_total_ms"]
+                    - dynamic_timing["decision_feature_prepare_ms"]
+                ) / client.step_calls
+                if client.step_calls
+                else 0.0
+            ),
+            "average_decision_total_ms": (
+                dynamic_timing["decision_total_ms"] / client.step_calls
+                if client.step_calls
+                else 0.0
+            ),
+            "pynq_quantization_transfer_and_fpga_included_in_dynamic_time": (
+                client.backend_name == "pynq"
+            ),
+            "decision_backend_included_in_dynamic_time": True,
+            "fpga_performance_claim_valid": client.backend_name == "pynq",
             "quality_evaluation_included_in_dynamic_time": False,
         }
 
@@ -791,12 +958,18 @@ def main():
             "baseline_generation_ms": baseline_timing["generation_ms"],
             "baseline_image_save_ms": baseline_timing["image_save_ms"],
             "dynamic_generation_ms": dynamic_timing["generation_ms"],
+            "dynamic_controller_setup_ms": dynamic_timing.get("controller_setup_ms", 0.0),
+            "dynamic_recovery_overhead_ms": dynamic_timing.get("recovery_overhead_ms", 0.0),
             "dynamic_text_encoder_ms": dynamic_timing["text_encoder_ms"],
             "dynamic_latent_init_ms": dynamic_timing["latent_init_ms"],
             "dynamic_diffusion_loop_ms": dynamic_timing["diffusion_loop_ms"],
             "dynamic_unet_ms": dynamic_timing["unet_ms"],
             "dynamic_scheduler_ms": dynamic_timing["scheduler_ms"],
             "dynamic_skip_prediction_ms": dynamic_timing["skip_prediction_ms"],
+            "dynamic_decision_feature_prepare_ms": dynamic_timing["decision_feature_prepare_ms"],
+            "dynamic_decision_total_ms": dynamic_timing["decision_total_ms"],
+            "dynamic_decision_backend_compute_ms": dynamic_timing["decision_backend_compute_ms"],
+            "dynamic_pc_controller_ms": dynamic_timing["pc_controller_ms"],
             "dynamic_pynq_feature_prepare_ms": dynamic_timing["pynq_feature_prepare_ms"],
             "dynamic_pynq_total_ms": dynamic_timing["pynq_total_ms"],
             "dynamic_network_round_trip_ms": dynamic_timing["network_round_trip_ms"],
@@ -828,12 +1001,12 @@ def main():
         print(f"HTML report        : {report_path}")
 
         print("\n" + "=" * 68)
-        print("Baseline vs PYNQ dynamic result")
+        print(f"Baseline vs {client.backend_display_name} dynamic result")
         print(f"Random seed       : {RUN_SEED}")
         if baseline_elapsed is not None:
             print(f"Baseline {BASE_STEPS} steps: {baseline_elapsed:.2f} s")
         print(
-            f"PYNQ dynamic       : {dynamic_elapsed:.2f} s "
+            f"Dynamic ({client.backend_name})  : {dynamic_elapsed:.2f} s "
             f"({executed_steps} UNet steps, {skipped_steps} skipped)"
         )
         if speedup is not None:

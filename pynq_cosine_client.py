@@ -47,6 +47,7 @@ class PynqDecision:
     adjacent_similarity_ema: float = float("nan")
     prepare_ms: float = 0.0
     feature_bytes: int = 0
+    decision_ms: float = 0.0
 
     @property
     def threshold_passed(self) -> bool:
@@ -116,6 +117,15 @@ def encode_distance_threshold(threshold: float) -> tuple[int, float]:
 
 class PynqCosineClient:
     """Persistent binary connection used once per diffusion timestep."""
+
+    backend_name = "pynq"
+    backend_display_name = "PYNQ-Z2/FPGA"
+    threshold_controller_location = "PYNQ ARM"
+    cosine_location = "FPGA"
+    distance_location = "FPGA"
+    skip_controller_location = "FPGA"
+    fallback_used = False
+    fallback_reason = None
 
     def __init__(self, host: str, port: int = 9000, timeout: float = 10.0):
         self.host = host
@@ -255,6 +265,7 @@ class PynqCosineClient:
             adjacent_similarity_ema=response.adjacent_similarity_ema,
             prepare_ms=prepare_ms,
             feature_bytes=quantized.nbytes,
+            decision_ms=response.round_trip_ms,
         )
 
     def _request(

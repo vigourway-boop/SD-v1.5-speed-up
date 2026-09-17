@@ -10,6 +10,7 @@ class ExperimentReportTest(unittest.TestCase):
         directory = Path("test_experiment_report_output")
         directory.mkdir(exist_ok=True)
         try:
+            (directory / "dynamic.png").write_bytes(b"test")
             path = generate_experiment_report(
                 directory,
                 {
@@ -18,6 +19,9 @@ class ExperimentReportTest(unittest.TestCase):
                     "prompt": "horse <test>",
                     "negative_prompt": "blurry",
                     "device": "cuda",
+                    "decision_backend_used": "pc",
+                    "decision_backend_display_name": "PC CPU (automatic fallback)",
+                    "decision_backend_fallback_used": True,
                     "pynq_host": "192.168.2.99",
                     "pynq_port": 9000,
                     "base_steps": 100,
@@ -52,9 +56,10 @@ class ExperimentReportTest(unittest.TestCase):
         self.assertIn("耗时汇总 / Timing Breakdown", content)
         self.assertIn('id="decisionChart"', content)
         self.assertIn("horse &lt;test&gt;", content)
+        self.assertIn("PC CPU (automatic fallback)", content)
+        self.assertIn('src="dynamic.png"', content)
         self.assertNotIn("NaN", content)
 
 
 if __name__ == "__main__":
     unittest.main()
-

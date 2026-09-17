@@ -68,6 +68,11 @@ def generate_experiment_report(
     dynamic_seconds = _format_number(summary.get("dynamic_seconds"), 2, " s")
     predictor = summary.get("skip_predictor") or {}
     recovery = summary.get("connection_recovery") or {}
+    backend = summary.get("decision_backend_used", "pynq")
+    backend_display = summary.get(
+        "decision_backend_display_name",
+        "PYNQ-Z2/FPGA" if backend == "pynq" else "PC CPU",
+    )
 
     metrics = "".join(
         [
@@ -84,9 +89,14 @@ def generate_experiment_report(
     )
 
     image_blocks = []
+    dynamic_filename = (
+        "dynamic.png"
+        if (experiment_dir / "dynamic.png").exists()
+        else "pynq_dynamic.png"
+    )
     for filename, label in (
         ("baseline.png", "原始生成 / Baseline"),
-        ("pynq_dynamic.png", "PYNQ 动态生成 / Dynamic"),
+        (dynamic_filename, f"{backend_display} 动态生成 / Dynamic"),
     ):
         if (experiment_dir / filename).exists():
             image_blocks.append(
@@ -134,8 +144,13 @@ def generate_experiment_report(
         [
             _table_row("模型 / Model", "Stable Diffusion v1.5"),
             _table_row("设备 / Device", summary.get("device", "N/A")),
+            _table_row("决策后端 / Decision backend", backend_display),
             _table_row(
-                "PYNQ 服务 / Server",
+                "是否使用 PC 后备 / PC fallback used",
+                "是 / Yes" if summary.get("decision_backend_fallback_used") else "否 / No",
+            ),
+            _table_row(
+                "PYNQ 服务（使用时） / Server (when used)",
                 f"{summary.get('pynq_host', 'N/A')}:{summary.get('pynq_port', 'N/A')}",
             ),
             _table_row("基础步数 / Base steps", summary.get("base_steps", "N/A")),
@@ -174,7 +189,7 @@ def generate_experiment_report(
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>SD 1.5 + PYNQ-Z2 实验报告 / Experiment Report</title>
+<title>SD 1.5 动态跳步实验报告 / Experiment Report</title>
 <style>
 :root {{ color-scheme: light; --ink:#17212b; --muted:#5d6874; --line:#d8dee4; --paper:#fff; --soft:#f4f6f8; --green:#147d64; --red:#b4443e; --blue:#2c64a5; --gold:#9b6a16; }}
 * {{ box-sizing:border-box; }}
@@ -214,7 +229,7 @@ thead th {{ background:#eef1f3; font-weight:650; }}
 </style>
 </head>
 <body>
-<header><h1>SD 1.5 + PYNQ-Z2 实验报告</h1><p>Experiment Report · {timestamp}</p></header>
+<header><h1>SD 1.5 动态跳步实验报告</h1><p>Experiment Report · {timestamp}</p></header>
 <main>
 <div class="metrics">{metrics}</div>
 <section><h2>生成结果 / Generated Images</h2><div class="images">{images_html}</div></section>

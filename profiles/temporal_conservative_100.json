@@ -1,0 +1,27 @@
+{
+  "name": "temporal_conservative_100",
+  "profile": {
+    "middle_threshold": 0.999,
+    "late_margin": 0.0008,
+    "late_min": 0.9988,
+    "late_max": 0.9992,
+    "warmup_ratio": 0.2,
+    "max_consecutive_skips": 2,
+    "distance_threshold": 0.0011062812454257125,
+    "predictor_damping": 0.5
+  },
+  "primary_steps": 100,
+  "resolution": [512, 512],
+  "scheduler": "DPMSolverMultistepScheduler",
+  "evaluation_directory": "experiments/robustness_20260915",
+  "selection": "Known failure calibration, then 6 fresh prompts x 2 seeds; no fresh-set tuning",
+  "validation": {
+    "mean_speedup_vs_original100": 1.9541631133283697,
+    "two_x_count": 0,
+    "cases": 12,
+    "mean_lpips_vs_original100": 0.019642948949088652,
+    "max_lpips_vs_original100": 0.06961024552583694,
+    "lpips_improved_vs_fast_count": 12
+  },
+  "note": "Opt-in. Better reference fidelity in this batch at lower speed; not a universal quality guarantee or a >=2x profile."
+}

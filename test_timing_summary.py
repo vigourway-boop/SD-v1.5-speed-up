@@ -31,7 +31,7 @@ class TimingSummaryTest(unittest.TestCase):
         }
         rows = build_timing_rows(2000.0, 300.0, baseline, dynamic, 5000.0)
 
-        self.assertEqual(len(rows), 20)
+        self.assertEqual(len(rows), 22)
         self.assertTrue(all(" / " in field for field in TIMING_FIELDS))
         self.assertTrue(all(" / " in row["阶段 / Stage"] for row in rows))
 
@@ -46,7 +46,7 @@ class TimingSummaryTest(unittest.TestCase):
             path.unlink(missing_ok=True)
 
         self.assertEqual(fieldnames, TIMING_FIELDS)
-        self.assertEqual(len(loaded), 20)
+        self.assertEqual(len(loaded), 22)
         self.assertEqual(loaded[0]["阶段 / Stage"], "模型加载 / Model loading")
         self.assertEqual(loaded[0]["耗时（ms） / Time (ms)"], "2000.000")
 
