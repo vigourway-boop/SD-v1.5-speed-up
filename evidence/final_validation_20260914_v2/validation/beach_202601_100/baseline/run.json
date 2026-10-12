@@ -1,0 +1,28 @@
+{
+  "split": "validation",
+  "prompt_id": "beach",
+  "prompt": "a photograph of a lighthouse above a rocky beach, ocean waves, clear daylight",
+  "negative_prompt": "blurry, low quality, deformed, distorted, bad anatomy, watermark, text",
+  "seed": 202601,
+  "steps": 100,
+  "actual_scheduler_steps": 100,
+  "variant": "baseline",
+  "backend": "none",
+  "seconds": 15.780150599999615,
+  "executed": 100,
+  "skipped": 0,
+  "profile": null,
+  "timing": {
+    "generation_ms": 15780.150599999615,
+    "image_save_ms": 50.01819999961299,
+    "cuda_peak_allocated_bytes": 2805340160,
+    "cuda_peak_reserved_bytes": 3422552064
+  },
+  "order": [
+    "original50",
+    "selected",
+    "current",
+    "baseline"
+  ],
+  "image_sha256": "8d9f4d5116856a020746229cc57c100ff5bf8d05eea335bf25f8e6db44e5da16"
+}

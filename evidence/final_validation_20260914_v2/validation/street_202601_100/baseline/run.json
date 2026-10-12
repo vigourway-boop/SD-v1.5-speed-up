@@ -1,0 +1,29 @@
+{
+  "split": "validation",
+  "prompt_id": "street",
+  "prompt": "a photograph of a narrow street in a European town, colorful buildings, afternoon",
+  "negative_prompt": "blurry, low quality, deformed, distorted, bad anatomy, watermark, text",
+  "seed": 202601,
+  "steps": 100,
+  "actual_scheduler_steps": 100,
+  "variant": "baseline",
+  "backend": "none",
+  "seconds": 17.106882299998688,
+  "executed": 100,
+  "skipped": 0,
+  "profile": null,
+  "timing": {
+    "generation_ms": 17106.882299998688,
+    "image_save_ms": 49.91540000264649,
+    "cuda_peak_allocated_bytes": 2805340160,
+    "cuda_peak_reserved_bytes": 3422552064
+  },
+  "order": [
+    "current",
+    "selected",
+    "original50",
+    "selected_pc",
+    "baseline"
+  ],
+  "image_sha256": "828aee176b4d37874dacb22cf901c5b7a52d819c5b4b53d7bda73cd5613ac18c"
+}

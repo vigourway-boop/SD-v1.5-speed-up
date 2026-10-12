@@ -1,0 +1,28 @@
+{
+  "split": "validation",
+  "prompt_id": "robot",
+  "prompt": "a watercolor painting of a small friendly robot watering plants in a garden",
+  "negative_prompt": "blurry, low quality, deformed, distorted, bad anatomy, watermark, text",
+  "seed": 202601,
+  "steps": 100,
+  "actual_scheduler_steps": 100,
+  "variant": "baseline",
+  "backend": "none",
+  "seconds": 16.080187300001853,
+  "executed": 100,
+  "skipped": 0,
+  "profile": null,
+  "timing": {
+    "generation_ms": 16080.187300001853,
+    "image_save_ms": 45.165899999119574,
+    "cuda_peak_allocated_bytes": 2805340160,
+    "cuda_peak_reserved_bytes": 3422552064
+  },
+  "order": [
+    "original50",
+    "selected",
+    "current",
+    "baseline"
+  ],
+  "image_sha256": "c1845d4ad684056077046eff06f905df56eaacf5def1e40ae050b7859789d2d9"
+}

@@ -1,0 +1,22 @@
+{
+  "name": "fast",
+  "profile": {
+    "middle_threshold": 0.9985,
+    "late_margin": 0.0012,
+    "late_min": 0.998,
+    "late_max": 0.9988,
+    "warmup_ratio": 0.15,
+    "max_consecutive_skips": 3,
+    "distance_threshold": 0.001431433537746502,
+    "predictor_damping": 0.5
+  },
+  "reason": "Fastest calibration mean meeting the predeclared diagnostic quality limits",
+  "quality_limits_met": true,
+  "calibration_only": true,
+  "held_out_data_used": false,
+  "diagnostic_limits": {
+    "mean_lpips_max": 0.1,
+    "max_lpips_max": 0.25,
+    "mean_clip_cosine_delta_min": -0.01
+  }
+}

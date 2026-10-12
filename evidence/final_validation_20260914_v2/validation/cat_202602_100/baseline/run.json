@@ -1,0 +1,29 @@
+{
+  "split": "validation",
+  "prompt_id": "cat",
+  "prompt": "a photograph of a cute orange kitten sitting on a windowsill, big bright eyes",
+  "negative_prompt": "blurry, low quality, deformed, distorted, bad anatomy, watermark, text",
+  "seed": 202602,
+  "steps": 100,
+  "actual_scheduler_steps": 100,
+  "variant": "baseline",
+  "backend": "none",
+  "seconds": 15.429755399996793,
+  "executed": 100,
+  "skipped": 0,
+  "profile": null,
+  "timing": {
+    "generation_ms": 15429.755399996793,
+    "image_save_ms": 50.965399997949135,
+    "cuda_peak_allocated_bytes": 2805340160,
+    "cuda_peak_reserved_bytes": 3422552064
+  },
+  "order": [
+    "current",
+    "original50",
+    "selected_pc",
+    "selected",
+    "baseline"
+  ],
+  "image_sha256": "19a34b5c39e421d06326b2a8c0ec0ff0be13321755098d46c7e7bc050cc7a547"
+}

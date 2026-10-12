@@ -1,0 +1,29 @@
+{
+  "split": "validation",
+  "prompt_id": "portrait",
+  "prompt": "a portrait photograph of a woman wearing a red scarf, daylight, neutral background",
+  "negative_prompt": "blurry, low quality, deformed, distorted, bad anatomy, watermark, text",
+  "seed": 202602,
+  "steps": 100,
+  "actual_scheduler_steps": 100,
+  "variant": "baseline",
+  "backend": "none",
+  "seconds": 17.13878349999868,
+  "executed": 100,
+  "skipped": 0,
+  "profile": null,
+  "timing": {
+    "generation_ms": 17138.78349999868,
+    "image_save_ms": 54.78690000018105,
+    "cuda_peak_allocated_bytes": 2805340160,
+    "cuda_peak_reserved_bytes": 3422552064
+  },
+  "order": [
+    "current",
+    "original50",
+    "selected_pc",
+    "selected",
+    "baseline"
+  ],
+  "image_sha256": "3f5b0cefa890a6cffaddb0f82dd2cc28cd5c6f44ec33066d6d73aebc53118f08"
+}

@@ -1,0 +1,28 @@
+{
+  "split": "validation",
+  "prompt_id": "food",
+  "prompt": "a food photograph of a bowl of noodles with vegetables on a restaurant table",
+  "negative_prompt": "blurry, low quality, deformed, distorted, bad anatomy, watermark, text",
+  "seed": 202601,
+  "steps": 100,
+  "actual_scheduler_steps": 100,
+  "variant": "baseline",
+  "backend": "none",
+  "seconds": 15.791942600000766,
+  "executed": 100,
+  "skipped": 0,
+  "profile": null,
+  "timing": {
+    "generation_ms": 15791.942600000766,
+    "image_save_ms": 52.12200000096345,
+    "cuda_peak_allocated_bytes": 2805340160,
+    "cuda_peak_reserved_bytes": 3422552064
+  },
+  "order": [
+    "original50",
+    "selected",
+    "current",
+    "baseline"
+  ],
+  "image_sha256": "b4904cab8260e65faa2d256b699531bb249f9f8b6a9e092c97a3047c0012acf6"
+}

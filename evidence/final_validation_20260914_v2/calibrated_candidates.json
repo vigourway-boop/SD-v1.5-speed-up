@@ -1,0 +1,32 @@
+{
+  "current": {
+    "middle_threshold": 0.9996,
+    "late_margin": 0.00035,
+    "late_min": 0.99945,
+    "late_max": 0.99965,
+    "warmup_ratio": 0.15,
+    "max_consecutive_skips": 3,
+    "distance_threshold": 2.0,
+    "predictor_damping": 0.5
+  },
+  "balanced": {
+    "middle_threshold": 0.999,
+    "late_margin": 0.0008,
+    "late_min": 0.9988,
+    "late_max": 0.9992,
+    "warmup_ratio": 0.15,
+    "max_consecutive_skips": 3,
+    "distance_threshold": 0.0011062812454257125,
+    "predictor_damping": 0.5
+  },
+  "fast": {
+    "middle_threshold": 0.9985,
+    "late_margin": 0.0012,
+    "late_min": 0.998,
+    "late_max": 0.9988,
+    "warmup_ratio": 0.15,
+    "max_consecutive_skips": 3,
+    "distance_threshold": 0.001431433537746502,
+    "predictor_damping": 0.5
+  }
+}

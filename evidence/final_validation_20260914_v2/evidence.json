@@ -1,0 +1,63 @@
+{
+  "validation_mean_speedup": 2.506074004520039,
+  "ratio_of_total_times": 2.504067049772016,
+  "prompt_cluster_bootstrap_95_interval": [
+    2.4676629239824486,
+    2.5492777516520215
+  ],
+  "two_x_fraction": 1.0,
+  "pc_pynq_pairs": 6,
+  "pc_pynq_identical_images": 6,
+  "pc_pynq_identical_decision_sequences": 6,
+  "pynq_minus_pc_seconds_mean": 0.09027914999933273,
+  "baseline_peak_allocated_mib_mean": 2675.380859375,
+  "held_out_quality_diagnostic_limits_met": false,
+  "held_out_lpips_over_025_count": 1,
+  "selected_lpips_better_than_original50_count": 6,
+  "mean_speedup_vs_original50": 1.3039119042805702,
+  "counterbalanced_verification": {
+    "no_skip": {
+      "executed": 20,
+      "skipped": 0,
+      "max_pixel_delta": 0,
+      "mean_pixel_delta": 0.0,
+      "identical_pixels": true
+    },
+    "timing_pairs": 6,
+    "mean_speedup": 2.4603008207824923,
+    "min_speedup": 2.3293895643302105,
+    "max_speedup": 2.536874606334106,
+    "baseline_first_mean": 2.4541589443792127,
+    "dynamic_first_mean": 2.466442697185772,
+    "identical_repeat_images": true,
+    "source_sha256": {
+      "combined_speed_test.py": "f33567644b1b642c1905000d755e1d7087b575d90f0a893eb3ce23291481df11",
+      "config.py": "0ea26635aadfadf95c2a71f02836220d855c0fae8fa35dfff35aca13c403053e",
+      "controller_profile.py": "f47cb1dfa03dec4990422a23238082a77540ff4509153bce94f6fefe0979a002",
+      "decision_backend.py": "a5d66a46a05a2540a878d33b3f30ccfc3dfae797287ac237b99dbc64c91eb434",
+      "dynamic_threshold.py": "457f32510c95d9b00f0b1c1332598916fe69ce7c7cb7cba014322469d983a371",
+      "experiment_report.py": "e1a4278065a4f966491952caaf3cc19120cb567a6d91056ab01d454c6af30acb",
+      "pc_skip_controller.py": "28d54a411d36affc9117c8091633ba432f6954b6c2016c26cb8f4e816a42def1",
+      "predictor_batch_experiment.py": "71f6ea91d0c7395c5bae12b034dd9826106dfc8caa5bcd311d6da42d993a2372",
+      "pynq_cosine_client.py": "b7a176696d137187312ed392447d067e8c352e09b1030686ec02128885277cae",
+      "pynq_protocol.py": "cd0e47b519b966c5d7daede5d79b4c3a46142cc7f9992f2874b2172d01d83028",
+      "quality_metrics.py": "daf672a0698765b86f5e02926b67ba67b3759b7ae0ba362c8d3125b899e02a08",
+      "skip_predictor.py": "8ac0577a0396ef737a63e6b0b37f1481183258b4aedbb883ffe833a46d503840",
+      "temporal_evaluation.py": "c49e8a91467ea4a1bbf11f7a06f58587a5bd6f10d9bb5489ef77ea773c9f666b",
+      "temporal_report.py": "40259f3dbadc8f0b9e27c9e6c3e164026f7e96cd9b75c15ce5745f4effd8b7a5",
+      "temporal_verification.py": "48e060c69d06df3eb0e139bfd12550c0dca03b7d37c54bf37237385bcd682155",
+      "test_config.py": "aa4e7d82c0d97b41f7b621941d969f2cbe9829d6880e60439b45bc13b1938e9d",
+      "test_controller_profile.py": "9c2a95e5a7637edc3070d908ec52a9ca1597d8e3204dcc2dc0e9ebcb63c8cc25",
+      "test_dynamic_threshold.py": "6ad0b551e5a39893695ca01319c429fba228c0cb1d03bb04505a21ecc48d3c20",
+      "test_experiment_report.py": "8e207ba9c0ee5035f7523501ef837d1f0d4520ec8d8ad5203855cbc0b633f21d",
+      "test_network_recovery.py": "4f9f0f6d47607a5acd6c445e53d4da19458b015a3f4b10d4216a82c3d90623d1",
+      "test_pc_skip_controller.py": "46b30d73ec4e43ea004311ef1261977b82dcd9829033ec226d5e3b8fdeb22d09",
+      "test_predictor_batch.py": "50d04d46b4cc90711077a08080976558d928c0d3346b8892451f83105fd0441f",
+      "test_pynq_hardware.py": "5f3afa2b61f492fd003d3503dfdbe397718f632cf0575d61269bf0748d060e84",
+      "test_pynq_protocol.py": "04c1f005d015ca20c370139158e7bd283c9f780f735eae9f54a85e250ec793a9",
+      "test_skip_predictor.py": "5fdc0bfdf930dd33d2cf4659e016761910f6c5dcbd4ba51aa446138a38b96ea6",
+      "test_temporal_evaluation.py": "ea805592d0ae3b87d1585252cb1163cd97d2b607315b8a8e86761909598cf2d8",
+      "test_timing_summary.py": "4fb0b3a42a1bc3ffc9a935a278f3b995e6cc46bc20667f66cdd6c6b226422a64"
+    }
+  }
+}

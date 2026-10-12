@@ -1,0 +1,28 @@
+{
+  "split": "validation",
+  "prompt_id": "flowers",
+  "prompt": "a still life photograph of sunflowers in a blue glass vase on a white table",
+  "negative_prompt": "blurry, low quality, deformed, distorted, bad anatomy, watermark, text",
+  "seed": 202602,
+  "steps": 100,
+  "actual_scheduler_steps": 100,
+  "variant": "baseline",
+  "backend": "none",
+  "seconds": 16.003589200001443,
+  "executed": 100,
+  "skipped": 0,
+  "profile": null,
+  "timing": {
+    "generation_ms": 16003.589200001443,
+    "image_save_ms": 47.40670000319369,
+    "cuda_peak_allocated_bytes": 2805340160,
+    "cuda_peak_reserved_bytes": 3422552064
+  },
+  "order": [
+    "selected",
+    "original50",
+    "current",
+    "baseline"
+  ],
+  "image_sha256": "7364d60fa2f0be1f7b80e9fa8562b71b0df346498ec5f69ccd2448befaff8531"
+}

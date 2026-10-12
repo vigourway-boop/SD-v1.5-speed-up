@@ -1,0 +1,28 @@
+{
+  "split": "validation",
+  "prompt_id": "car",
+  "prompt": "a photograph of a red sports car parked beside a modern building, daylight",
+  "negative_prompt": "blurry, low quality, deformed, distorted, bad anatomy, watermark, text",
+  "seed": 202601,
+  "steps": 100,
+  "actual_scheduler_steps": 100,
+  "variant": "baseline",
+  "backend": "none",
+  "seconds": 17.321338099998684,
+  "executed": 100,
+  "skipped": 0,
+  "profile": null,
+  "timing": {
+    "generation_ms": 17321.338099998684,
+    "image_save_ms": 52.85139999978128,
+    "cuda_peak_allocated_bytes": 2805340160,
+    "cuda_peak_reserved_bytes": 3422552064
+  },
+  "order": [
+    "original50",
+    "selected",
+    "current",
+    "baseline"
+  ],
+  "image_sha256": "b044eec067fe765ab60443e88de69269b3361bcb3f0bc33a9c49b5177a0a6d5f"
+}
